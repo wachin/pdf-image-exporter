@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QCloseEvent, QDragEnterEvent, QDropEvent
+from PyQt6.QtGui import QCloseEvent, QDragEnterEvent, QDropEvent, QPixmap
 from PyQt6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
@@ -24,6 +24,8 @@ from PyQt6.QtWidgets import (
     QWidget,
     QComboBox,
     QLineEdit,
+    QFrame,
+    QScrollArea,
 )
 
 from ..core.conversion import ConversionSettings
@@ -38,6 +40,7 @@ from ..services.pdftocairo_service import ConversionQueueRunner, PageConversion
 from ..services.pdfinfo_service import PdfInfoService
 from ..services.logging_service import QtLogHandler
 from ..services.settings_service import SettingsService
+from ..services.thumbnail_service import ThumbnailRequest, ThumbnailService
 from .dialogs.log_dialog import LogDialog
 
 LOGGER = logging.getLogger("pdf_image_exporter.ui")
@@ -54,6 +57,9 @@ class MainWindow(QMainWindow):
         self._log_handler = log_handler
         self._pdfinfo = PdfInfoService(self)
         self._runner = ConversionQueueRunner(self)
+        self._thumbnail_service = ThumbnailService(self)
+        self._preview_pixmap = QPixmap()
+        self._preview_fit_to_window = True
         self._output_dir: Path | None = self._settings.last_output_dir()
         self.setAcceptDrops(True)
         self._build_ui()
@@ -136,6 +142,7 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(self.cancel_button)
         root.addLayout(toolbar)
 
+        content = QHBoxLayout()
         self.table = QTableWidget(0, 6)
         self.table.setHorizontalHeaderLabels(
             [
@@ -154,7 +161,40 @@ class MainWindow(QMainWindow):
         header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableWidget.SelectionMode.ExtendedSelection)
-        root.addWidget(self.table, 1)
+        content.addWidget(self.table, 3)
+
+        preview_panel = QVBoxLayout()
+        preview_title = QLabel(self.tr("Preview"))
+        preview_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        preview_controls = QHBoxLayout()
+        preview_controls.addWidget(QLabel(self.tr("Page:")))
+        self.preview_page_spin = QSpinBox()
+        self.preview_page_spin.setRange(1, 1)
+        preview_controls.addWidget(self.preview_page_spin)
+        preview_controls.addWidget(QLabel(self.tr("Zoom:")))
+        self.preview_zoom_spin = QSpinBox()
+        self.preview_zoom_spin.setRange(25, 400)
+        self.preview_zoom_spin.setSingleStep(25)
+        self.preview_zoom_spin.setValue(100)
+        preview_controls.addWidget(self.preview_zoom_spin)
+        self.preview_fit_button = QPushButton(self.tr("Fit"))
+        preview_controls.addWidget(self.preview_fit_button)
+        self.preview_label = QLabel(self.tr("Select a PDF"))
+        self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.preview_label.setFrameShape(QFrame.Shape.StyledPanel)
+        self.preview_label.setMinimumSize(260, 320)
+        self.preview_label.setScaledContents(False)
+        self.preview_scroll = QScrollArea()
+        self.preview_scroll.setWidget(self.preview_label)
+        self.preview_scroll.setWidgetResizable(True)
+        self.preview_info_label = QLabel("")
+        self.preview_info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        preview_panel.addWidget(preview_title)
+        preview_panel.addLayout(preview_controls)
+        preview_panel.addWidget(self.preview_scroll, 1)
+        preview_panel.addWidget(self.preview_info_label)
+        content.addLayout(preview_panel, 1)
+        root.addLayout(content, 1)
 
         bottom = QHBoxLayout()
         self.progress = QProgressBar()
@@ -193,6 +233,12 @@ class MainWindow(QMainWindow):
         self._runner.resumed.connect(self._conversion_resumed)
         self._runner.stoppedAfterCurrent.connect(self._stopped_after_current)
         self._runner.pageFailed.connect(self._page_failed)
+        self._thumbnail_service.ready.connect(self._thumbnail_ready)
+        self._thumbnail_service.failed.connect(self._thumbnail_failed)
+        self.table.itemSelectionChanged.connect(self._selection_changed)
+        self.preview_page_spin.valueChanged.connect(self._preview_page_changed)
+        self.preview_zoom_spin.valueChanged.connect(self._preview_zoom_changed)
+        self.preview_fit_button.clicked.connect(self._fit_preview)
 
     def _add_pdf(self) -> None:
         files, _selected_filter = QFileDialog.getOpenFileNames(
@@ -331,6 +377,8 @@ class MainWindow(QMainWindow):
                 self.tr("Ready"),
                 str(self._output_dir or ""),
             )
+            if self.table.currentRow() < 0:
+                self.table.selectRow(row)
 
     def _pdfinfo_failed(self, path: Path, message: str) -> None:
         row = self._row_for_path(path)
@@ -488,6 +536,7 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event: QCloseEvent) -> None:
         self._settings.set_window_size(self.size())
         self._save_conversion_settings()
+        self._thumbnail_service.cleanup()
         super().closeEvent(event)
 
     def _row_for_path(self, path: Path) -> int | None:
@@ -537,6 +586,100 @@ class MainWindow(QMainWindow):
             if info is not None:
                 documents.append(info)
         return documents
+
+    def _selection_changed(self) -> None:
+        row = self.table.currentRow()
+        if row < 0:
+            self.preview_label.setText(self.tr("Select a PDF"))
+            self.preview_label.setPixmap(QPixmap())
+            self.preview_info_label.setText("")
+            self._preview_pixmap = QPixmap()
+            return
+        path_item = self.table.item(row, 1)
+        path = Path(path_item.text())
+        info = self._documents.get(path)
+        if info is None:
+            self.preview_label.setText(self.tr("Waiting for PDF analysis"))
+            self.preview_label.setPixmap(QPixmap())
+            self.preview_info_label.setText("")
+            self._preview_pixmap = QPixmap()
+            return
+        self.preview_page_spin.blockSignals(True)
+        self.preview_page_spin.setRange(1, max(info.pages, 1))
+        self.preview_page_spin.setValue(1)
+        self.preview_page_spin.blockSignals(False)
+        self._request_preview(path, 1)
+
+    def _thumbnail_ready(self, pdf_path: Path, page: int, image_path: Path) -> None:
+        row = self.table.currentRow()
+        if row < 0 or Path(self.table.item(row, 1).text()) != pdf_path:
+            return
+        pixmap = QPixmap(str(image_path))
+        if pixmap.isNull():
+            self.preview_label.setText(self.tr("Preview unavailable"))
+            return
+        self._preview_pixmap = pixmap
+        self._apply_preview_pixmap()
+        self.preview_info_label.setText(self.tr("Page {page}").format(page=page))
+
+    def _thumbnail_failed(self, pdf_path: Path, page: int, message: str) -> None:
+        row = self.table.currentRow()
+        if row >= 0 and Path(self.table.item(row, 1).text()) == pdf_path:
+            self.preview_label.setPixmap(QPixmap())
+            self.preview_label.setText(self.tr("Preview unavailable"))
+        LOGGER.warning(
+            "Thumbnail failed for %s page %s: %s", pdf_path.name, page, message
+        )
+
+    def _preview_page_changed(self, page: int) -> None:
+        row = self.table.currentRow()
+        if row < 0:
+            return
+        self._request_preview(Path(self.table.item(row, 1).text()), page)
+
+    def _preview_zoom_changed(self) -> None:
+        self._preview_fit_to_window = False
+        self.preview_scroll.setWidgetResizable(False)
+        self._apply_preview_pixmap()
+
+    def _fit_preview(self) -> None:
+        self._preview_fit_to_window = True
+        self.preview_scroll.setWidgetResizable(True)
+        self._apply_preview_pixmap()
+
+    def _request_preview(self, path: Path, page: int) -> None:
+        self._preview_pixmap = QPixmap()
+        self.preview_label.setPixmap(QPixmap())
+        self.preview_label.setText(self.tr("Generating preview"))
+        info = self._documents.get(path)
+        pages = info.pages if info is not None else page
+        self.preview_info_label.setText(
+            self.tr("Page {page} of {pages}").format(page=page, pages=pages)
+        )
+        self._thumbnail_service.request(
+            ThumbnailRequest(pdf_path=path, page=page, max_pixels=900)
+        )
+
+    def _apply_preview_pixmap(self) -> None:
+        if self._preview_pixmap.isNull():
+            return
+        if self._preview_fit_to_window:
+            scaled = self._preview_pixmap.scaled(
+                self.preview_scroll.viewport().size(),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+        else:
+            zoom = self.preview_zoom_spin.value() / 100.0
+            scaled = self._preview_pixmap.scaled(
+                round(self._preview_pixmap.width() * zoom),
+                round(self._preview_pixmap.height() * zoom),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+        self.preview_label.setText("")
+        self.preview_label.setPixmap(scaled)
+        self.preview_label.resize(scaled.size())
 
     def _add_paths(self, paths: list[Path]) -> None:
         for path in paths:

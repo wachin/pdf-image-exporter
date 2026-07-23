@@ -43,6 +43,9 @@ one page at a time through `QProcess`, run a bounded conversion queue, pause
 after running pages finish, retry failed pages, show progress, cancel active
 conversion processes, stop after the currently running page batch, persist basic
 settings, choose the output-file conflict policy, and show an in-app log viewer.
+The preview panel generates low-resolution page previews on demand, supports
+page selection, fit-to-window and zoom, and stores thumbnails only in a temporary
+cache that is removed when the application closes.
 
 Current built-in profiles include screen/messaging, web, social media, screen
 reading, print, lossless archive, light JPEG, thumbnails, and OCR-oriented

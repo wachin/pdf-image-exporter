@@ -86,6 +86,13 @@ models and service signals instead of building command strings itself.
     32 source files.
   - Qt offscreen smoke test: conflict selector exposes 4 policies and defaults
     to `cancel`.
+- Latest check after first preview implementation:
+  - `pytest tests/unit/test_thumbnail_service.py`: passed.
+  - `mypy src tests/unit/test_conversion_queue_runner.py`: passed, no issues in
+    33 source files.
+  - Qt offscreen smoke test: created `MainWindow` with preview controls.
+  - Real Poppler smoke test through `ThumbnailService`: generated a temporary
+    thumbnail for a one-page PDF and cleaned the cache.
 - `pytest`: passed, 11 tests.
 - `mypy src`: passed, no issues in 24 source files.
 - `python3 -m compileall src tests`: passed.
@@ -158,10 +165,10 @@ models and service signals instead of building command strings itself.
 
 ## Phase 5: previsualización
 
-- [ ] Low-resolution thumbnails on demand.
-- [ ] Selected page preview.
-- [ ] Zoom controls.
-- [ ] Temporary cache cleanup.
+- [x] Low-resolution thumbnails on demand.
+- [x] Selected page preview.
+- [x] Zoom controls.
+- [x] Temporary cache cleanup.
 - [ ] Mixed page-size indicators.
 
 ## Phase 6: perfiles y configuración

@@ -26,3 +26,9 @@ PDF folder discovery lives in `core.discovery` so the GUI and future CLI can
 share the same deterministic non-recursive/recursive import behavior. The GUI
 uses the visible table order as the first priority mechanism: moving documents
 up or down changes the order passed to conversion planning.
+
+Preview generation lives in `services.thumbnail_service`. It uses `pdftocairo`
+through `QProcess`, writes low-resolution PNG files to a `QTemporaryDir`, caches
+requests by PDF/page/size, and removes temporary files when the main window
+closes. The GUI requests only the selected page preview instead of rasterizing
+whole documents.
