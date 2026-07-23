@@ -26,6 +26,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QFrame,
     QScrollArea,
+    QInputDialog,
 )
 
 from ..core.conversion import ConversionSettings
@@ -33,12 +34,19 @@ from ..core.conflicts import FileConflictPolicy
 from ..core.discovery import discover_pdf_files
 from ..core.formats import FormatOptions, OutputFormat
 from ..core.pdf_info import PdfDocumentInfo
-from ..core.profiles import default_profiles
+from ..core.profiles import (
+    ConversionProfile,
+    default_profiles,
+    export_profiles,
+    import_profiles,
+    profile_identifier_from_name,
+)
 from ..core.queue import QueueSettings, plan_conversions
 from ..metadata import APP_NAME
 from ..services.pdftocairo_service import ConversionQueueRunner, PageConversion
 from ..services.pdfinfo_service import PdfInfoService
 from ..services.logging_service import QtLogHandler
+from ..services.profile_store import ProfileStore
 from ..services.settings_service import SettingsService
 from ..services.thumbnail_service import ThumbnailRequest, ThumbnailService
 from .dialogs.log_dialog import LogDialog
@@ -54,6 +62,8 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(APP_NAME)
         self._documents: dict[Path, PdfDocumentInfo] = {}
         self._settings = SettingsService()
+        self._profile_store = ProfileStore()
+        self._profiles: list[ConversionProfile] = []
         self._log_handler = log_handler
         self._pdfinfo = PdfInfoService(self)
         self._runner = ConversionQueueRunner(self)
@@ -96,9 +106,18 @@ class MainWindow(QMainWindow):
         toolbar.addStretch(1)
         toolbar.addWidget(QLabel(self.tr("Profile:")))
         self.profile_combo = QComboBox()
-        for profile in default_profiles():
-            self.profile_combo.addItem(profile.name, profile.identifier)
+        self._load_profiles()
         toolbar.addWidget(self.profile_combo)
+        self.save_profile_button = QPushButton(self.tr("Save profile"))
+        self.import_profiles_button = QPushButton(self.tr("Import"))
+        self.export_profiles_button = QPushButton(self.tr("Export"))
+        self.delete_profile_button = QPushButton(self.tr("Delete"))
+        self.restore_profiles_button = QPushButton(self.tr("Defaults"))
+        toolbar.addWidget(self.save_profile_button)
+        toolbar.addWidget(self.import_profiles_button)
+        toolbar.addWidget(self.export_profiles_button)
+        toolbar.addWidget(self.delete_profile_button)
+        toolbar.addWidget(self.restore_profiles_button)
         toolbar.addWidget(QLabel(self.tr("Format:")))
         self.format_combo = QComboBox()
         self.format_combo.addItem("PNG", OutputFormat.PNG.value)
@@ -219,6 +238,11 @@ class MainWindow(QMainWindow):
         self.stop_after_current_button.clicked.connect(self._stop_after_current)
         self.retry_button.clicked.connect(self._retry_failed)
         self.cancel_button.clicked.connect(self._runner.cancel)
+        self.save_profile_button.clicked.connect(self._save_current_profile)
+        self.import_profiles_button.clicked.connect(self._import_profiles)
+        self.export_profiles_button.clicked.connect(self._export_profiles)
+        self.delete_profile_button.clicked.connect(self._delete_current_profile)
+        self.restore_profiles_button.clicked.connect(self._restore_default_profiles)
         self.profile_combo.currentIndexChanged.connect(self._profile_changed)
         self._pdfinfo.finished.connect(self._pdfinfo_finished)
         self._pdfinfo.failed.connect(self._pdfinfo_failed)
@@ -355,7 +379,7 @@ class MainWindow(QMainWindow):
 
     def _profile_changed(self) -> None:
         selected = self.profile_combo.currentData()
-        for profile in default_profiles():
+        for profile in self._profiles:
             if profile.identifier == selected:
                 self.format_combo.setCurrentIndex(
                     self.format_combo.findData(profile.settings.output_format.value)
@@ -363,6 +387,118 @@ class MainWindow(QMainWindow):
                 self.dpi_spin.setValue(profile.settings.dpi)
                 self.pages_edit.setText(profile.settings.page_expression)
                 return
+
+    def _load_profiles(self, selected_identifier: str | None = None) -> None:
+        try:
+            self._profiles = self._profile_store.all_profiles()
+        except (OSError, ValueError) as exc:
+            LOGGER.warning("Could not load user profiles: %s", exc)
+            self._profiles = list(default_profiles())
+        current = selected_identifier or self.profile_combo.currentData()
+        self.profile_combo.blockSignals(True)
+        self.profile_combo.clear()
+        for profile in self._profiles:
+            label = profile.name if profile.built_in else f"{profile.name} *"
+            self.profile_combo.addItem(label, profile.identifier)
+        if current is not None:
+            index = self.profile_combo.findData(current)
+            if index >= 0:
+                self.profile_combo.setCurrentIndex(index)
+        self.profile_combo.blockSignals(False)
+
+    def _current_conversion_settings(self) -> ConversionSettings:
+        output_format = OutputFormat(self.format_combo.currentData())
+        return ConversionSettings(
+            output_format=output_format,
+            dpi=self.dpi_spin.value(),
+            page_expression=self.pages_edit.text(),
+            output_dir=self._output_dir,
+            format_options=FormatOptions(output_format=output_format),
+        )
+
+    def _save_current_profile(self) -> None:
+        name, accepted = QInputDialog.getText(self, APP_NAME, self.tr("Profile name:"))
+        if not accepted or not name.strip():
+            return
+        profile = ConversionProfile(
+            identifier=profile_identifier_from_name(name),
+            name=name.strip(),
+            description=name.strip(),
+            settings=self._current_conversion_settings(),
+            built_in=False,
+        )
+        try:
+            self._profile_store.add_or_replace_user_profile(profile)
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(self, APP_NAME, str(exc))
+            return
+        self._load_profiles(profile.identifier)
+        self.profile_combo.setCurrentIndex(
+            self.profile_combo.findData(profile.identifier)
+        )
+
+    def _import_profiles(self) -> None:
+        filename, _selected_filter = QFileDialog.getOpenFileName(
+            self,
+            self.tr("Import profiles"),
+            "",
+            self.tr("JSON files (*.json);;All files (*)"),
+        )
+        if not filename:
+            return
+        try:
+            profiles = [
+                ConversionProfile(
+                    identifier=profile.identifier,
+                    name=profile.name,
+                    description=profile.description,
+                    settings=profile.settings,
+                    built_in=False,
+                )
+                for profile in import_profiles(Path(filename))
+            ]
+            for profile in profiles:
+                self._profile_store.add_or_replace_user_profile(profile)
+        except (OSError, ValueError, KeyError) as exc:
+            QMessageBox.warning(self, APP_NAME, str(exc))
+            return
+        self._load_profiles()
+
+    def _export_profiles(self) -> None:
+        filename, _selected_filter = QFileDialog.getSaveFileName(
+            self,
+            self.tr("Export user profiles"),
+            "profiles.json",
+            self.tr("JSON files (*.json);;All files (*)"),
+        )
+        if not filename:
+            return
+        try:
+            export_profiles(Path(filename), self._profile_store.user_profiles())
+        except OSError as exc:
+            QMessageBox.warning(self, APP_NAME, str(exc))
+
+    def _delete_current_profile(self) -> None:
+        identifier = str(self.profile_combo.currentData())
+        profile = next(
+            (item for item in self._profiles if item.identifier == identifier),
+            None,
+        )
+        if profile is None:
+            return
+        if profile.built_in:
+            QMessageBox.information(
+                self,
+                APP_NAME,
+                self.tr("Built-in profiles cannot be deleted."),
+            )
+            return
+        if self._profile_store.delete_user_profile(identifier):
+            self._load_profiles("screen-messaging")
+
+    def _restore_default_profiles(self) -> None:
+        self._profile_store.restore_defaults()
+        self._load_profiles("screen-messaging")
 
     def _pdfinfo_finished(self, path: Path, info: object) -> None:
         assert isinstance(info, PdfDocumentInfo)

@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from .conversion import ConversionSettings
 from .formats import FormatOptions, OutputFormat
+
+PROFILE_ID_RE = re.compile(r"[^a-z0-9-]+")
 
 
 @dataclass(frozen=True)
@@ -114,6 +117,13 @@ def import_profiles(path: Path) -> list[ConversionProfile]:
     if not isinstance(data, list):
         raise ValueError("Profile file must contain a list.")
     return [ConversionProfile.from_dict(item) for item in data]
+
+
+def profile_identifier_from_name(name: str) -> str:
+    """Create a stable user-profile identifier from a display name."""
+
+    identifier = PROFILE_ID_RE.sub("-", name.strip().lower()).strip("-")
+    return f"user-{identifier or 'profile'}"
 
 
 def _profile(

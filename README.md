@@ -51,7 +51,8 @@ with mixed page dimensions.
 
 Current built-in profiles include screen/messaging, web, social media, screen
 reading, print, lossless archive, light JPEG, thumbnails, and OCR-oriented
-output. User-editable profile management is still pending.
+output. User-created profiles are stored in the XDG configuration directory and
+can be saved, imported, exported, deleted, or reset from the GUI.
 
 ## Development checks
 

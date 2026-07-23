@@ -99,6 +99,13 @@ models and service signals instead of building command strings itself.
     33 source files.
   - Real `pdfinfo -box -f 1 -l N` smoke test confirmed per-page size output.
   - Async `PdfInfoService` smoke test returned 2 page sizes for a 2-page PDF.
+- Latest check after user profile storage:
+  - `pytest tests/unit/test_profiles.py tests/unit/test_profile_store.py`:
+    passed, 4 tests.
+  - `mypy src tests/unit/test_conversion_queue_runner.py`: passed, no issues in
+    34 source files.
+  - Qt offscreen smoke test: loaded 11 built-in profiles and profile action
+    buttons.
 - `pytest`: passed, 11 tests.
 - `mypy src`: passed, no issues in 24 source files.
 - `python3 -m compileall src tests`: passed.
@@ -180,9 +187,11 @@ models and service signals instead of building command strings itself.
 ## Phase 6: perfiles y configuración
 
 - [x] Built-in default profile definitions.
-- [ ] User profiles in XDG config.
+- [x] User profiles in XDG config.
 - [x] Import/export profile serialization helpers.
-- [ ] Restore defaults.
+- [x] Import/export profiles from GUI.
+- [x] Delete user-created profiles from GUI.
+- [x] Restore defaults.
 - [x] QSettings/XDG settings layer.
 
 ## Phase 7: internacionalización

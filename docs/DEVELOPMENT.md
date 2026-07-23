@@ -38,3 +38,8 @@ has multiple pages but only one generic page size is returned, performs a second
 `pdfinfo -box -f 1 -l <pages>` call to collect per-page dimensions. The preview
 uses `PdfDocumentInfo.page_size()` to show the selected page size and to flag
 documents with mixed dimensions.
+
+User profiles are stored by `services.profile_store.ProfileStore` as JSON under
+the XDG configuration directory. Built-in profiles come from `core.profiles` and
+are never modified; user profiles are loaded alongside them and are the only
+profiles that can be replaced or deleted.
