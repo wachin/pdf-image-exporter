@@ -93,6 +93,12 @@ models and service signals instead of building command strings itself.
   - Qt offscreen smoke test: created `MainWindow` with preview controls.
   - Real Poppler smoke test through `ThumbnailService`: generated a temporary
     thumbnail for a one-page PDF and cleaned the cache.
+- Latest check after mixed page-size preview indicators:
+  - `pytest tests/unit/test_pdfinfo.py`: passed, 2 tests.
+  - `mypy src tests/unit/test_conversion_queue_runner.py`: passed, no issues in
+    33 source files.
+  - Real `pdfinfo -box -f 1 -l N` smoke test confirmed per-page size output.
+  - Async `PdfInfoService` smoke test returned 2 page sizes for a 2-page PDF.
 - `pytest`: passed, 11 tests.
 - `mypy src`: passed, no issues in 24 source files.
 - `python3 -m compileall src tests`: passed.
@@ -169,7 +175,7 @@ models and service signals instead of building command strings itself.
 - [x] Selected page preview.
 - [x] Zoom controls.
 - [x] Temporary cache cleanup.
-- [ ] Mixed page-size indicators.
+- [x] Mixed page-size indicators.
 
 ## Phase 6: perfiles y configuración
 

@@ -377,6 +377,8 @@ class MainWindow(QMainWindow):
                 self.tr("Ready"),
                 str(self._output_dir or ""),
             )
+            if info.has_mixed_page_sizes:
+                self.table.item(row, 4).setText(self.tr("Ready - mixed sizes"))
             if self.table.currentRow() < 0:
                 self.table.selectRow(row)
 
@@ -621,6 +623,7 @@ class MainWindow(QMainWindow):
         self._preview_pixmap = pixmap
         self._apply_preview_pixmap()
         self.preview_info_label.setText(self.tr("Page {page}").format(page=page))
+        self._update_preview_info(pdf_path, page)
 
     def _thumbnail_failed(self, pdf_path: Path, page: int, message: str) -> None:
         row = self.table.currentRow()
@@ -680,6 +683,20 @@ class MainWindow(QMainWindow):
         self.preview_label.setText("")
         self.preview_label.setPixmap(scaled)
         self.preview_label.resize(scaled.size())
+
+    def _update_preview_info(self, path: Path, page: int) -> None:
+        info = self._documents.get(path)
+        if info is None:
+            return
+        mixed = self.tr(" - mixed page sizes") if info.has_mixed_page_sizes else ""
+        self.preview_info_label.setText(
+            self.tr("Page {page} of {pages}: {size}{mixed}").format(
+                page=page,
+                pages=info.pages,
+                size=info.display_page_size(page),
+                mixed=mixed,
+            )
+        )
 
     def _add_paths(self, paths: list[Path]) -> None:
         for path in paths:

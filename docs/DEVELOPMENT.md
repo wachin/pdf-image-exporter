@@ -32,3 +32,9 @@ through `QProcess`, writes low-resolution PNG files to a `QTemporaryDir`, caches
 requests by PDF/page/size, and removes temporary files when the main window
 closes. The GUI requests only the selected page preview instead of rasterizing
 whole documents.
+
+`PdfInfoService` first performs a lightweight metadata read and, when a document
+has multiple pages but only one generic page size is returned, performs a second
+`pdfinfo -box -f 1 -l <pages>` call to collect per-page dimensions. The preview
+uses `PdfDocumentInfo.page_size()` to show the selected page size and to flag
+documents with mixed dimensions.

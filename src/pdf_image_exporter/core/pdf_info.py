@@ -29,6 +29,15 @@ class PdfDocumentInfo:
     def primary_page_size(self) -> PageSize | None:
         return self.page_sizes[0] if self.page_sizes else None
 
+    def page_size(self, page: int) -> PageSize | None:
+        """Return the size for a 1-based page number when known."""
+
+        if page < 1:
+            return None
+        if len(self.page_sizes) >= page:
+            return self.page_sizes[page - 1]
+        return self.primary_page_size
+
     @property
     def has_mixed_page_sizes(self) -> bool:
         if not self.page_sizes:
@@ -49,6 +58,18 @@ class PdfDocumentInfo:
         return (
             f"{name} {size.width_mm:.0f} x {size.height_mm:.0f} mm, "
             f"{size.width_points:.0f} x {size.height_points:.0f} pt{suffix}"
+        )
+
+    def display_page_size(self, page: int) -> str:
+        """Return a compact human-readable page size summary."""
+
+        size = self.page_size(page)
+        if size is None:
+            return "Unknown size"
+        name = recognize_standard_size(size)
+        return (
+            f"{name}, {size.width_mm:.0f} x {size.height_mm:.0f} mm, "
+            f"{size.orientation}"
         )
 
 
