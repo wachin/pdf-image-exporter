@@ -1,0 +1,187 @@
+# PDF Image Exporter Roadmap
+
+## Environment Snapshot
+
+- Python: 3.11.2
+- PyQt6: 6.4.2
+- Qt: 6.4.2
+- `pdftocairo`: 22.12.0 at `/usr/bin/pdftocairo`
+- `pdfinfo`: 22.12.0 at `/usr/bin/pdfinfo`
+- `dpkg-buildpackage`: 1.21.23
+- `lintian`: 2.116.3+deb12u1
+- `appstreamcli`: 0.16.1
+- `desktop-file-validate`: installed
+- `pylupdate6`: 6.4.2
+- `lrelease`: 5.15.8
+- `pytest`: 7.2.1
+- `black`: 23.1.0
+- `mypy`: 1.0.1
+- `ruff`: not installed in this environment
+
+## Poppler Capabilities Observed
+
+`pdftocairo` 22.12.0 supports the image outputs required for the first milestone:
+
+- PNG: `-png`
+- JPEG: `-jpeg`, `-jpegopt <string>`
+- TIFF: `-tiff`, `-tiffcompression none|packbits|jpeg|lzw|deflate`
+- Page selection: `-f`, `-l`, `-o`, `-e`, `-singlefile`
+- Resolution: `-r`, `-rx`, `-ry`
+- Pixel scaling: `-scale-to`, `-scale-to-x`, `-scale-to-y`
+- Crop options: `-x`, `-y`, `-W`, `-H`, `-sz`, `-cropbox`
+- Color options: `-mono`, `-gray`, `-icc`
+- PNG transparency: `-transp`
+- Rendering: `-antialias <string>`
+- Password arguments: `-opw`, `-upw`
+
+`pdfinfo` 22.12.0 supports:
+
+- Page count and document metadata.
+- Per-page bounding boxes with `-box` plus `-f` and `-l`.
+- ISO dates with `-isodates`.
+- Password arguments: `-opw`, `-upw`.
+
+Password limitation: Poppler command-line tools accept passwords as command
+arguments, which can expose them to process-list observers on some systems.
+The application must never log or store passwords and should document this
+external-tool limitation before exposing password support broadly.
+
+## Architecture Decision
+
+The source tree uses a `src/` layout. Core modules are independent from Qt
+widgets where practical, while process execution for the GUI is isolated in
+services that use `QProcess` with argument lists and no shell. The GUI consumes
+models and service signals instead of building command strings itself.
+
+## Verification Log
+
+- `pytest`: passed, 11 tests.
+- `mypy src`: passed, no issues in 24 source files.
+- `python3 -m compileall src tests`: passed.
+- `env PYTHONPATH=src python3 -m pdf_image_exporter.cli.main --help`: passed.
+- `env PYTHONPATH=src QT_QPA_PLATFORM=offscreen python3 -c '...'`: created
+  `MainWindow` and printed `PDF Image Exporter`.
+- Poppler smoke test: generated a one-page A4 PDF in `/tmp` with Qt, verified it
+  with `pdfinfo`, converted it with `pdftocairo -png -f 1 -l 1 -singlefile -r 72`,
+  and confirmed `/tmp/pdf-image-exporter-smoke-out/smoke-001.png` as a
+  595 x 842 PNG.
+- `timeout 60s black --check src tests`: Black reported all 29 files unchanged,
+  but the process did not exit before `timeout` in this environment and returned
+  124. Earlier Black reformatted the four reported files successfully.
+
+## Phase 1: research and design
+
+- [x] Inspect repository and current state.
+- [x] Check Python, PyQt6, Poppler and Debian packaging tool versions.
+- [x] Capture real `pdftocairo` and `pdfinfo` options.
+- [x] Define initial format capability model.
+- [x] Define architecture and module boundaries.
+- [x] Define initial process strategy using `QProcess`.
+- [ ] Define complete Debian packaging strategy.
+- [ ] Define complete AppImage strategy.
+
+## Phase 2: core
+
+- [x] Create project structure.
+- [x] Add central metadata.
+- [x] Implement page range parser and validator.
+- [x] Implement dimension and paper-size recognition helpers.
+- [x] Implement initial conversion configuration models.
+- [x] Implement initial output format definitions.
+- [x] Implement safe `pdftocairo` argument builder.
+- [x] Implement `pdfinfo` parser and Qt service.
+- [x] Implement initial output naming.
+- [x] Add initial unit tests.
+- [ ] Implement full conversion queue independent of GUI.
+- [ ] Implement profiles.
+- [ ] Implement collision policies.
+
+## Phase 3: GUI mínima funcional
+
+- [x] Create application bootstrap.
+- [x] Create main window.
+- [x] Add PDF selection.
+- [x] Show page count and page size.
+- [x] Select PNG, JPEG or TIFF.
+- [x] Select DPI.
+- [x] Select output directory.
+- [x] Convert each selected page to an independent image.
+- [x] Show progress.
+- [x] Allow cancellation.
+- [ ] Add drag and drop.
+- [ ] Add persistent settings.
+- [ ] Add in-app log viewer.
+
+## Phase 4: batch avanzado
+
+- [ ] Queue with configurable concurrency.
+- [ ] Pause/resume.
+- [ ] Retry failed jobs.
+- [ ] Folder import.
+- [ ] Recursive PDF discovery.
+- [ ] Conflict policies.
+- [ ] Priority.
+
+## Phase 5: previsualización
+
+- [ ] Low-resolution thumbnails on demand.
+- [ ] Selected page preview.
+- [ ] Zoom controls.
+- [ ] Temporary cache cleanup.
+- [ ] Mixed page-size indicators.
+
+## Phase 6: perfiles y configuración
+
+- [ ] Default profiles.
+- [ ] User profiles in XDG config.
+- [ ] Import/export profiles.
+- [ ] Restore defaults.
+- [ ] QSettings/XDG settings layer.
+
+## Phase 7: internacionalización
+
+- [ ] Translation scaffolding.
+- [ ] English source strings.
+- [ ] Spanish `.ts`.
+- [ ] Translator documentation.
+- [ ] Runtime language selection.
+
+## Phase 8: accesibilidad y pulido
+
+- [ ] Keyboard navigation audit.
+- [ ] Tab order.
+- [ ] Accessible names.
+- [ ] HiDPI checks.
+- [ ] Resource estimates.
+- [ ] User-facing error mapping.
+
+## Phase 9: empaquetado Debian
+
+- [ ] `debian/control`.
+- [ ] `debian/rules`.
+- [ ] `debian/changelog`.
+- [ ] `debian/copyright`.
+- [ ] Desktop file.
+- [ ] AppStream metadata.
+- [ ] Manual page.
+- [ ] Autopkgtest.
+- [ ] `lintian` validation.
+
+## Phase 10: AppImage
+
+- [ ] AppDir layout.
+- [ ] Build script.
+- [ ] Runtime dependency checks.
+- [ ] Document system-`pdftocairo` strategy.
+- [ ] AppImage validation.
+
+## Phase 11: documentación y lanzamiento
+
+- [ ] Complete README.
+- [ ] CHANGELOG.
+- [ ] CONTRIBUTING.
+- [ ] SECURITY.
+- [ ] DEVELOPMENT.
+- [ ] PACKAGING.
+- [ ] Initial screenshots.
+- [ ] Release checklist.
