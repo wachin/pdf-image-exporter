@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+
+export PYBUILD_NAME=pdf-image-exporter
+export PYBUILD_TEST_ARGS=tests
+
+%:
+	dh $@ --buildsystem=pybuild
+
+override_dh_auto_build:
+	dh_auto_build
+	lrelease src/pdf_image_exporter/translations/app_en.ts -qm src/pdf_image_exporter/translations/app_en.qm
+	lrelease src/pdf_image_exporter/translations/app_es.ts -qm src/pdf_image_exporter/translations/app_es.qm
+
+override_dh_auto_test:
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	PYTHONPATH=src pytest
+endif

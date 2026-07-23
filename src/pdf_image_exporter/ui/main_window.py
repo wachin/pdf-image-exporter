@@ -59,7 +59,11 @@ LOGGER = logging.getLogger("pdf_image_exporter.ui")
 class MainWindow(QMainWindow):
     """Minimal GUI: add PDFs, inspect metadata, convert pages."""
 
-    def __init__(self, log_handler: QtLogHandler | None = None) -> None:
+    def __init__(
+        self,
+        log_handler: QtLogHandler | None = None,
+        initial_paths: list[Path] | None = None,
+    ) -> None:
         super().__init__()
         self.setWindowTitle(APP_NAME)
         self._documents: dict[Path, PdfDocumentInfo] = {}
@@ -79,6 +83,8 @@ class MainWindow(QMainWindow):
         self._configure_accessibility()
         self.resize(self._settings.window_size(self.size()))
         self._restore_conversion_settings()
+        if initial_paths:
+            self._add_paths(initial_paths)
 
     def _build_ui(self) -> None:
         central = QWidget(self)

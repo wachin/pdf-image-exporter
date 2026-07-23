@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=PDF Image Exporter
+GenericName=PDF to Image Converter
+Comment=Export PDF pages as PNG, JPEG or TIFF images
+Exec=pdf-image-exporter %F
+Icon=io.github.pdfimageexporter.PDFImageExporter
+Terminal=false
+Categories=Graphics;Qt;
+Keywords=PDF;image;export;convert;PNG;JPEG;TIFF;Poppler;
+MimeType=application/pdf;
+StartupNotify=true

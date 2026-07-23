@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.pdfimageexporter.PDFImageExporter</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>PDF Image Exporter</name>
+  <summary>Export PDF pages as image files</summary>
+  <description>
+    <p>
+      PDF Image Exporter is a desktop application for GNU/Linux that converts
+      PDF pages to PNG, JPEG or TIFF images using Poppler's pdftocairo tool.
+    </p>
+    <p>
+      It supports batch conversion, page ranges, output naming policies,
+      conversion profiles, conflict handling and low-resolution previews.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.pdfimageexporter.PDFImageExporter.desktop</launchable>
+  <provides>
+    <binary>pdf-image-exporter</binary>
+  </provides>
+  <recommends>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </recommends>
+  <categories>
+    <category>Graphics</category>
+    <category>Office</category>
+    <category>Utility</category>
+  </categories>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Main conversion window</caption>
+      <image>https://example.invalid/pdf-image-exporter/screenshots/main.png</image>
+    </screenshot>
+  </screenshots>
+  <url type="homepage">https://example.invalid/pdf-image-exporter</url>
+  <url type="bugtracker">https://example.invalid/pdf-image-exporter/issues</url>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.1.0" date="2026-07-23">
+      <description>
+        <p>Initial development release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

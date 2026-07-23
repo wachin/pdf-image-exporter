@@ -1,0 +1,3 @@
+src/pdf_image_exporter/resources/desktop/io.github.pdfimageexporter.PDFImageExporter.desktop usr/share/applications
+src/pdf_image_exporter/resources/metainfo/io.github.pdfimageexporter.PDFImageExporter.metainfo.xml usr/share/metainfo
+src/pdf_image_exporter/resources/icons/io.github.pdfimageexporter.PDFImageExporter.svg usr/share/icons/hicolor/scalable/apps

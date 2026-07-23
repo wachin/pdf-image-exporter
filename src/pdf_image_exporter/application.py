@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 from PyQt6.QtCore import QCoreApplication
 from PyQt6.QtWidgets import QApplication, QMessageBox, QWidget
@@ -40,6 +41,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    window = MainWindow(log_handler=log_handler)
+    initial_paths = [
+        Path(argument)
+        for argument in args[1:]
+        if argument
+        and not argument.startswith("-")
+        and Path(argument).suffix.lower() == ".pdf"
+    ]
+    window = MainWindow(log_handler=log_handler, initial_paths=initial_paths)
     window.show()
     return app.exec()

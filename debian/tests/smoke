@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+python3 -c "import pdf_image_exporter; print(pdf_image_exporter.APP_NAME)"
+pdf-image-exporter-cli --help >/dev/null

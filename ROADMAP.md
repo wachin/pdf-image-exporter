@@ -124,6 +124,15 @@ models and service signals instead of building command strings itself.
   - `pylupdate6`: added 26 new messages, now 104 translation messages.
   - `lrelease`: generated 104 finished translations for English and Spanish
     `.qm` files locally.
+- Latest check after initial Debian metadata:
+  - `desktop-file-validate`: passed with no output.
+  - `appstreamcli validate --no-net`: passed.
+  - `man --warnings -l docs/pdf-image-exporter.1`: rendered successfully.
+  - `dpkg-checkbuilddeps`: local environment is missing
+    `pybuild-plugin-pyproject`.
+  - `pytest`: passed, 40 tests.
+  - `mypy src tests/unit/test_conversion_queue_runner.py`: passed, no issues in
+    37 source files.
 - `pytest`: passed, 11 tests.
 - `mypy src`: passed, no issues in 24 source files.
 - `python3 -m compileall src tests`: passed.
@@ -231,14 +240,14 @@ models and service signals instead of building command strings itself.
 
 ## Phase 9: empaquetado Debian
 
-- [ ] `debian/control`.
-- [ ] `debian/rules`.
-- [ ] `debian/changelog`.
-- [ ] `debian/copyright`.
-- [ ] Desktop file.
-- [ ] AppStream metadata.
-- [ ] Manual page.
-- [ ] Autopkgtest.
+- [x] `debian/control`.
+- [x] `debian/rules`.
+- [x] `debian/changelog`.
+- [x] `debian/copyright`.
+- [x] Desktop file.
+- [x] AppStream metadata.
+- [x] Manual page.
+- [x] Autopkgtest.
 - [ ] `lintian` validation.
 
 ## Phase 10: AppImage

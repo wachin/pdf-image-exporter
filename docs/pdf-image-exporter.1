@@ -1,0 +1,50 @@
+.TH PDF-IMAGE-EXPORTER 1 "July 2026" "PDF Image Exporter 0.1.0" "User Commands"
+.SH NAME
+pdf-image-exporter \- export PDF pages as image files
+.SH SYNOPSIS
+.B pdf-image-exporter
+.RI [ PDF ...]
+.br
+.B pdf-image-exporter-cli
+.IR PDF
+.RI [ --format
+.IR png | jpeg | tiff ]
+.RI [ --dpi
+.IR DPI ]
+.SH DESCRIPTION
+.B PDF Image Exporter
+is a graphical application for GNU/Linux that exports PDF pages as PNG, JPEG or
+TIFF images using Poppler's
+.BR pdftocairo (1)
+tool.
+.PP
+The graphical interface supports batch conversion, page ranges, profiles,
+output-name conflict policies, low-resolution previews and cancellation.
+.SH OPTIONS
+.TP
+.B PDF
+One or more PDF files to add to the graphical conversion queue.
+.TP
+.BI --format " FORMAT"
+Set the output format for the basic command-line interface.
+.TP
+.BI --dpi " DPI"
+Set rasterization resolution for the basic command-line interface.
+.SH FILES
+.TP
+.I ~/.config/io.github.pdfimageexporter.PDFImageExporter/
+User configuration and custom conversion profiles.
+.TP
+.I ~/.local/share/io.github.pdfimageexporter.PDFImageExporter/logs/
+Application logs, when writable.
+.SH LIMITATIONS
+The application relies on Poppler command-line tools. Keep Poppler updated
+through the operating system package manager. Password support is intentionally
+limited because command-line password arguments can be visible to local process
+list observers.
+.SH REPORTING BUGS
+Report bugs to the project bug tracker. Do not include passwords, private
+documents or sensitive paths in public reports.
+.SH SEE ALSO
+.BR pdftocairo (1),
+.BR pdfinfo (1)

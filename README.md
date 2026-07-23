@@ -71,6 +71,12 @@ The application uses Qt Linguist. English and Spanish `.ts` files are kept in
 `src/pdf_image_exporter/translations/`. Runtime `.qm` files can be generated
 with `lrelease`; see `docs/TRANSLATING.md`.
 
+## Packaging
+
+Initial Debian packaging files are available in `debian/`. The package uses
+system dependencies, including `python3-pyqt6` and `poppler-utils`; see
+`PACKAGING.md`.
+
 ## Security and privacy
 
 The application runs offline and does not include telemetry, analytics,

@@ -1,0 +1,30 @@
+Source: pdf-image-exporter
+Section: graphics
+Priority: optional
+Maintainer: PDF Image Exporter contributors <maintainers@example.invalid>
+Build-Depends:
+ debhelper-compat (= 13),
+ dh-python,
+ pybuild-plugin-pyproject,
+ python3-all,
+ python3-pyqt6,
+ python3-pytest <!nocheck>,
+ python3-setuptools,
+ qt6-tools-dev-tools,
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+Homepage: https://example.invalid/pdf-image-exporter
+
+Package: pdf-image-exporter
+Architecture: all
+Depends:
+ ${misc:Depends},
+ ${python3:Depends},
+ poppler-utils,
+ python3-pyqt6,
+Description: export PDF pages as image files
+ PDF Image Exporter is a graphical GNU/Linux application for converting PDF
+ pages to PNG, JPEG or TIFF images using Poppler's pdftocairo tool.
+ .
+ It supports batch conversion, page ranges, output naming policies, conversion
+ profiles, conflict handling and low-resolution previews.

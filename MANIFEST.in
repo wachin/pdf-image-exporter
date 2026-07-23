@@ -1,0 +1,7 @@
+include README.md
+include LICENSE
+recursive-include src/pdf_image_exporter/translations *.ts
+recursive-include src/pdf_image_exporter/translations *.qm
+recursive-include src/pdf_image_exporter/resources/desktop *
+recursive-include src/pdf_image_exporter/resources/metainfo *
+recursive-include src/pdf_image_exporter/resources/icons *

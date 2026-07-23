@@ -54,3 +54,7 @@ primary controls have shortcuts, accessible names, tooltips and an explicit tab
 order. `core.errors` maps common exceptions to concise user-facing messages,
 while `ConversionPlan.resource_warning()` estimates uncompressed raster memory
 before conversion starts.
+
+Debian packaging metadata lives in `debian/`. Desktop, icon and AppStream source
+files live under `src/pdf_image_exporter/resources/` and are installed into
+Freedesktop locations by `debian/install`.
