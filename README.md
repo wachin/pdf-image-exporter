@@ -3,9 +3,10 @@
 PDF Image Exporter is a GNU/Linux desktop application for converting PDF pages
 to image files with Poppler's `pdftocairo`.
 
-This repository currently contains the first implementation milestone: a modular
+This repository currently contains an early implementation: a modular
 Python/PyQt6 application with a safe Poppler process layer, PDF inspection via
-`pdfinfo`, page-range parsing, output naming, unit tests, and a minimal GUI.
+`pdfinfo`, page-range parsing, output naming, conversion planning, built-in
+profiles, persistent settings, logging, unit tests, and a minimal GUI.
 
 ## Requirements
 
@@ -34,9 +35,23 @@ PYTHONPATH=src pdf-image-exporter-cli input.pdf --format png --dpi 300
 ## Current status
 
 The project is in early development. See `ROADMAP.md` for completed and pending
-items. The first GUI can add PDFs, inspect page count and size, select PNG/JPEG/
-TIFF, choose DPI and an output folder, convert one page at a time through
-`QProcess`, show progress, and cancel the active conversion.
+items. The current GUI can add PDFs, accept PDF drag and drop, inspect page
+count and size, select a built-in profile, select PNG/JPEG/TIFF, choose DPI,
+select page ranges, choose an output folder, convert one page at a time through
+`QProcess`, show progress, cancel the active conversion, persist basic settings,
+and show an in-app log viewer.
+
+Current built-in profiles include screen/messaging, web, social media, screen
+reading, print, lossless archive, light JPEG, thumbnails, and OCR-oriented
+output. User-editable profile management is still pending.
+
+## Development checks
+
+```bash
+PYTHONPATH=src pytest
+PYTHONPATH=src mypy src
+PYTHONPATH=src python3 -m compileall src tests
+```
 
 ## Security and privacy
 

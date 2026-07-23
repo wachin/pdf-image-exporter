@@ -9,6 +9,7 @@ from PyQt6.QtCore import QObject, QProcess, pyqtSignal
 
 from ..core.conversion import ConversionSettings
 from ..core.formats import FormatOptions, OutputFormat
+from ..core.queue import PlannedPage
 from .process_service import find_executable
 
 
@@ -20,6 +21,19 @@ class PageConversion:
     page: int
     output_prefix: Path
     settings: ConversionSettings
+
+    @classmethod
+    def from_planned_page(
+        cls, planned_page: PlannedPage, settings: ConversionSettings
+    ) -> "PageConversion":
+        """Create a service request from a core conversion plan page."""
+
+        return cls(
+            pdf_path=planned_page.pdf_path,
+            page=planned_page.page,
+            output_prefix=planned_page.output_prefix,
+            settings=settings,
+        )
 
 
 def build_pdftocairo_args(request: PageConversion) -> list[str]:

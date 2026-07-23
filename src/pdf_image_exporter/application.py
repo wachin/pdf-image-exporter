@@ -8,6 +8,7 @@ from PyQt6.QtCore import QCoreApplication
 from PyQt6.QtWidgets import QApplication, QMessageBox, QWidget
 
 from .metadata import APP_ID, APP_NAME, VERSION
+from .services.logging_service import configure_logging
 from .services.process_service import find_executable
 from .ui.main_window import MainWindow
 
@@ -19,10 +20,11 @@ def main(argv: list[str] | None = None) -> int:
     QCoreApplication.setApplicationName(APP_NAME)
     QCoreApplication.setApplicationVersion(VERSION)
     QCoreApplication.setOrganizationName("PDF Image Exporter")
-    QCoreApplication.setApplicationName(APP_NAME)
+    QCoreApplication.setOrganizationDomain("example.invalid")
 
     app = QApplication(args)
     app.setDesktopFileName(APP_ID)
+    log_handler = configure_logging()
 
     if find_executable("pdftocairo") is None or find_executable("pdfinfo") is None:
         QMessageBox.critical(
@@ -33,6 +35,6 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    window = MainWindow()
+    window = MainWindow(log_handler=log_handler)
     window.show()
     return app.exec()

@@ -55,6 +55,12 @@ models and service signals instead of building command strings itself.
 
 ## Verification Log
 
+- Latest check after queue/profile/settings/logging work:
+  - `pytest`: passed, 23 tests.
+  - `mypy src`: passed, no issues in 30 source files.
+  - `python3 -m compileall src tests`: passed.
+  - Qt offscreen smoke test with temporary XDG paths: created `MainWindow`,
+    loaded 11 built-in profiles and restored page expression `all`.
 - `pytest`: passed, 11 tests.
 - `mypy src`: passed, no issues in 24 source files.
 - `python3 -m compileall src tests`: passed.
@@ -93,8 +99,9 @@ models and service signals instead of building command strings itself.
 - [x] Implement initial output naming.
 - [x] Add initial unit tests.
 - [ ] Implement full conversion queue independent of GUI.
-- [ ] Implement profiles.
-- [ ] Implement collision policies.
+- [x] Implement conversion planning independent of GUI.
+- [x] Implement built-in profiles and JSON import/export.
+- [x] Implement collision policies.
 
 ## Phase 3: GUI mínima funcional
 
@@ -108,9 +115,9 @@ models and service signals instead of building command strings itself.
 - [x] Convert each selected page to an independent image.
 - [x] Show progress.
 - [x] Allow cancellation.
-- [ ] Add drag and drop.
-- [ ] Add persistent settings.
-- [ ] Add in-app log viewer.
+- [x] Add drag and drop.
+- [x] Add persistent settings.
+- [x] Add in-app log viewer.
 
 ## Phase 4: batch avanzado
 
@@ -132,11 +139,11 @@ models and service signals instead of building command strings itself.
 
 ## Phase 6: perfiles y configuración
 
-- [ ] Default profiles.
+- [x] Built-in default profile definitions.
 - [ ] User profiles in XDG config.
-- [ ] Import/export profiles.
+- [x] Import/export profile serialization helpers.
 - [ ] Restore defaults.
-- [ ] QSettings/XDG settings layer.
+- [x] QSettings/XDG settings layer.
 
 ## Phase 7: internacionalización
 
