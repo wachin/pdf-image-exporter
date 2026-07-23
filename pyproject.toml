@@ -32,7 +32,7 @@ pdf-image-exporter-cli = "pdf_image_exporter.cli.main:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-pdf_image_exporter = ["translations/*.ts", "resources/desktop/*", "resources/metainfo/*"]
+pdf_image_exporter = ["translations/*.ts", "translations/*.qm", "resources/desktop/*", "resources/metainfo/*"]
 
 [tool.black]
 line-length = 88

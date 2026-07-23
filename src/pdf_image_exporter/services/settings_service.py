@@ -77,6 +77,13 @@ class SettingsService:
     def set_recursive_folder_import(self, enabled: bool) -> None:
         self.set_value("import/recursive_folders", enabled)
 
+    def language_code(self) -> str:
+        value = self.value("ui/language", "system")
+        return str(value)
+
+    def set_language_code(self, code: str) -> None:
+        self.set_value("ui/language", code)
+
     def page_expression(self) -> str:
         return str(self.value("conversion/page_expression", "all"))
 

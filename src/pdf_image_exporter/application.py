@@ -10,6 +10,8 @@ from PyQt6.QtWidgets import QApplication, QMessageBox, QWidget
 from .metadata import APP_ID, APP_NAME, VERSION
 from .services.logging_service import configure_logging
 from .services.process_service import find_executable
+from .services.settings_service import SettingsService
+from .services.translation_service import install_translator
 from .ui.main_window import MainWindow
 
 
@@ -24,6 +26,9 @@ def main(argv: list[str] | None = None) -> int:
 
     app = QApplication(args)
     app.setDesktopFileName(APP_ID)
+    translator = install_translator(app, SettingsService().language_code())
+    if translator is not None:
+        app.setProperty("pdf_image_exporter_translator", translator)
     log_handler = configure_logging()
 
     if find_executable("pdftocairo") is None or find_executable("pdfinfo") is None:

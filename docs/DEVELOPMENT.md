@@ -43,3 +43,8 @@ User profiles are stored by `services.profile_store.ProfileStore` as JSON under
 the XDG configuration directory. Built-in profiles come from `core.profiles` and
 are never modified; user profiles are loaded alongside them and are the only
 profiles that can be replaced or deleted.
+
+Translations are loaded at startup by `services.translation_service`. The
+current GUI stores the selected language in QSettings and applies it on the next
+application launch; live retranslation is intentionally deferred until widgets
+have explicit `retranslateUi()` support.

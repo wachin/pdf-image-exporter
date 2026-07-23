@@ -62,6 +62,12 @@ PYTHONPATH=src mypy src
 PYTHONPATH=src python3 -m compileall src tests
 ```
 
+## Translations
+
+The application uses Qt Linguist. English and Spanish `.ts` files are kept in
+`src/pdf_image_exporter/translations/`. Runtime `.qm` files can be generated
+with `lrelease`; see `docs/TRANSLATING.md`.
+
 ## Security and privacy
 
 The application runs offline and does not include telemetry, analytics,

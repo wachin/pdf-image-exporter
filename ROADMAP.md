@@ -106,6 +106,15 @@ models and service signals instead of building command strings itself.
     34 source files.
   - Qt offscreen smoke test: loaded 11 built-in profiles and profile action
     buttons.
+- Latest check after i18n infrastructure:
+  - `pylupdate6`: updated `app_en.ts` and `app_es.ts` with 78 messages.
+  - `lrelease`: generated 78 finished translations for English and Spanish
+    `.qm` files locally.
+  - Qt translator smoke test: Spanish `.qm` loaded successfully.
+  - targeted `pytest tests/unit/test_translation_service.py tests/unit/test_settings_service.py`:
+    passed, 3 tests.
+  - `mypy src tests/unit/test_conversion_queue_runner.py`: passed, no issues in
+    36 source files.
 - `pytest`: passed, 11 tests.
 - `mypy src`: passed, no issues in 24 source files.
 - `python3 -m compileall src tests`: passed.
@@ -196,11 +205,11 @@ models and service signals instead of building command strings itself.
 
 ## Phase 7: internacionalización
 
-- [ ] Translation scaffolding.
-- [ ] English source strings.
-- [ ] Spanish `.ts`.
-- [ ] Translator documentation.
-- [ ] Runtime language selection.
+- [x] Translation scaffolding.
+- [x] English source strings.
+- [x] Spanish `.ts`.
+- [x] Translator documentation.
+- [x] Runtime language selection.
 
 ## Phase 8: accesibilidad y pulido
 

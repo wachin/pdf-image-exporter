@@ -1,0 +1,1 @@
+"""Qt Linguist translation files."""

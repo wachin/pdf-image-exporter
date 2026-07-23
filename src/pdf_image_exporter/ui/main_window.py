@@ -49,6 +49,7 @@ from ..services.logging_service import QtLogHandler
 from ..services.profile_store import ProfileStore
 from ..services.settings_service import SettingsService
 from ..services.thumbnail_service import ThumbnailRequest, ThumbnailService
+from ..services.translation_service import available_languages, normalized_language_code
 from .dialogs.log_dialog import LogDialog
 
 LOGGER = logging.getLogger("pdf_image_exporter.ui")
@@ -118,6 +119,11 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(self.export_profiles_button)
         toolbar.addWidget(self.delete_profile_button)
         toolbar.addWidget(self.restore_profiles_button)
+        toolbar.addWidget(QLabel(self.tr("Language:")))
+        self.language_combo = QComboBox()
+        for language in available_languages():
+            self.language_combo.addItem(language.name, language.code)
+        toolbar.addWidget(self.language_combo)
         toolbar.addWidget(QLabel(self.tr("Format:")))
         self.format_combo = QComboBox()
         self.format_combo.addItem("PNG", OutputFormat.PNG.value)
@@ -243,6 +249,7 @@ class MainWindow(QMainWindow):
         self.export_profiles_button.clicked.connect(self._export_profiles)
         self.delete_profile_button.clicked.connect(self._delete_current_profile)
         self.restore_profiles_button.clicked.connect(self._restore_default_profiles)
+        self.language_combo.currentIndexChanged.connect(self._language_changed)
         self.profile_combo.currentIndexChanged.connect(self._profile_changed)
         self._pdfinfo.finished.connect(self._pdfinfo_finished)
         self._pdfinfo.failed.connect(self._pdfinfo_failed)
@@ -631,6 +638,13 @@ class MainWindow(QMainWindow):
         profile_index = self.profile_combo.findData(self._settings.selected_profile())
         if profile_index >= 0:
             self.profile_combo.setCurrentIndex(profile_index)
+        language_index = self.language_combo.findData(
+            normalized_language_code(self._settings.language_code())
+        )
+        if language_index >= 0:
+            self.language_combo.blockSignals(True)
+            self.language_combo.setCurrentIndex(language_index)
+            self.language_combo.blockSignals(False)
         format_index = self.format_combo.findData(self._settings.output_format().value)
         if format_index >= 0:
             self.format_combo.setCurrentIndex(format_index)
@@ -651,10 +665,22 @@ class MainWindow(QMainWindow):
         self._settings.set_page_expression(self.pages_edit.text())
         self._settings.set_parallel_processes(self.parallel_spin.value())
         self._settings.set_recursive_folder_import(self.recursive_check.isChecked())
+        self._settings.set_language_code(str(self.language_combo.currentData()))
         self._settings.set_conflict_policy(
             FileConflictPolicy(self.conflict_combo.currentData())
         )
         self._settings.sync()
+
+    def _language_changed(self) -> None:
+        self._settings.set_language_code(str(self.language_combo.currentData()))
+        self._settings.sync()
+        QMessageBox.information(
+            self,
+            APP_NAME,
+            self.tr(
+                "Language changes will be applied after restarting the application."
+            ),
+        )
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
         if event.mimeData().hasUrls():
