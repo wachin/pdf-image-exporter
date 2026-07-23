@@ -1,0 +1,78 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python packaging outputs
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Test and tooling artifacts
+.tox/
+.nox/
+coverage.xml
+junit.xml
+
+# Qt Linguist generated binaries
+*.qm
+
+# Local runtime files
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+
+# Generated conversion output used during local testing
+output/
+exports/
+converted/
+
+# Debian packaging build artifacts
+*.build
+*.buildinfo
+*.changes
+*.deb
+*.ddeb
+*.debian.tar.*
+*.dsc
+*.orig.tar.*
+*.upload
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/*.substvars
+debian/*.debhelper
+debian/tmp/
+debian/pdf-image-exporter/
+
+# AppImage/AppDir artifacts
+AppDir/
+*.AppImage
+*.AppImage.zsync
+appimage-build/
+packaging/appimage/AppDir/
+packaging/appimage/build/
+
+# Editor and OS noise
+.idea/
+.vscode/
+*~
+.*.swp
+.*.swo
+.DS_Store
+Thumbs.db
