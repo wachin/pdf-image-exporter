@@ -77,6 +77,17 @@ Initial Debian packaging files are available in `debian/`. The package uses
 system dependencies, including `python3-pyqt6` and `poppler-utils`; see
 `PACKAGING.md`.
 
+Install Debian/Ubuntu packaging tools:
+
+```bash
+sudo apt install dpkg-dev pybuild-plugin-pyproject devscripts debhelper \
+  dh-python python3-all python3-pyqt6 python3-pytest python3-setuptools \
+  qt6-tools-dev-tools poppler-utils lintian appstream desktop-file-utils
+```
+
+`dpkg-dev` provides `dpkg-buildpackage`. `pybuild-plugin-pyproject` is required
+to build this `pyproject.toml` based Python package through Debian `pybuild`.
+
 ## Security and privacy
 
 The application runs offline and does not include telemetry, analytics,
