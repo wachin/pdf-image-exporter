@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QCheckBox,
     QSpinBox,
     QTableWidget,
     QTableWidgetItem,
@@ -27,6 +28,7 @@ from PyQt6.QtWidgets import (
 
 from ..core.conversion import ConversionSettings
 from ..core.conflicts import FileConflictPolicy
+from ..core.discovery import discover_pdf_files
 from ..core.formats import FormatOptions, OutputFormat
 from ..core.pdf_info import PdfDocumentInfo
 from ..core.profiles import default_profiles
@@ -65,7 +67,10 @@ class MainWindow(QMainWindow):
 
         toolbar = QHBoxLayout()
         self.add_button = QPushButton(self.tr("Add PDF"))
+        self.add_folder_button = QPushButton(self.tr("Add folder"))
         self.remove_button = QPushButton(self.tr("Remove"))
+        self.up_button = QPushButton(self.tr("Up"))
+        self.down_button = QPushButton(self.tr("Down"))
         self.log_button = QPushButton(self.tr("Log"))
         self.convert_button = QPushButton(self.tr("Convert"))
         self.pause_button = QPushButton(self.tr("Pause"))
@@ -75,7 +80,10 @@ class MainWindow(QMainWindow):
         self.retry_button.setEnabled(False)
         self.cancel_button.setEnabled(False)
         toolbar.addWidget(self.add_button)
+        toolbar.addWidget(self.add_folder_button)
         toolbar.addWidget(self.remove_button)
+        toolbar.addWidget(self.up_button)
+        toolbar.addWidget(self.down_button)
         toolbar.addWidget(self.log_button)
         toolbar.addStretch(1)
         toolbar.addWidget(QLabel(self.tr("Profile:")))
@@ -99,6 +107,8 @@ class MainWindow(QMainWindow):
         self.pages_edit.setPlaceholderText(self.tr("all, 1, 2-5, odd, even"))
         self.pages_edit.setMaximumWidth(170)
         toolbar.addWidget(self.pages_edit)
+        self.recursive_check = QCheckBox(self.tr("Recursive"))
+        toolbar.addWidget(self.recursive_check)
         toolbar.addWidget(QLabel(self.tr("Parallel:")))
         self.parallel_spin = QSpinBox()
         self.parallel_spin.setRange(1, 4)
@@ -144,7 +154,10 @@ class MainWindow(QMainWindow):
 
     def _connect_signals(self) -> None:
         self.add_button.clicked.connect(self._add_pdf)
+        self.add_folder_button.clicked.connect(self._add_folder)
         self.remove_button.clicked.connect(self._remove_selected)
+        self.up_button.clicked.connect(self._move_selected_up)
+        self.down_button.clicked.connect(self._move_selected_down)
         self.log_button.clicked.connect(self._show_log)
         self.output_button.clicked.connect(self._choose_output)
         self.convert_button.clicked.connect(self._convert)
@@ -174,6 +187,19 @@ class MainWindow(QMainWindow):
         )
         self._add_paths([Path(filename) for filename in files])
 
+    def _add_folder(self) -> None:
+        directory = QFileDialog.getExistingDirectory(self, self.tr("Add PDF folder"))
+        if not directory:
+            return
+        try:
+            paths = discover_pdf_files(
+                Path(directory), self.recursive_check.isChecked()
+            )
+        except OSError as exc:
+            QMessageBox.warning(self, APP_NAME, str(exc))
+            return
+        self._add_paths(paths)
+
     def _remove_selected(self) -> None:
         rows = sorted(
             {index.row() for index in self.table.selectedIndexes()}, reverse=True
@@ -182,6 +208,24 @@ class MainWindow(QMainWindow):
             path = Path(self.table.item(row, 1).text())
             self._documents.pop(path, None)
             self.table.removeRow(row)
+
+    def _move_selected_up(self) -> None:
+        rows = sorted({index.row() for index in self.table.selectedIndexes()})
+        self.table.clearSelection()
+        for row in rows:
+            if row > 0:
+                self._swap_rows(row, row - 1)
+                self.table.selectRow(row - 1)
+
+    def _move_selected_down(self) -> None:
+        rows = sorted(
+            {index.row() for index in self.table.selectedIndexes()}, reverse=True
+        )
+        self.table.clearSelection()
+        for row in rows:
+            if row < self.table.rowCount() - 1:
+                self._swap_rows(row, row + 1)
+                self.table.selectRow(row + 1)
 
     def _choose_output(self) -> None:
         directory = QFileDialog.getExistingDirectory(
@@ -215,7 +259,7 @@ class MainWindow(QMainWindow):
         )
         try:
             plan = plan_conversions(
-                list(self._documents.values()),
+                self._ordered_documents(),
                 settings,
                 FileConflictPolicy.CANCEL,
             )
@@ -370,6 +414,7 @@ class MainWindow(QMainWindow):
         self.dpi_spin.setValue(self._settings.dpi())
         self.pages_edit.setText(self._settings.page_expression())
         self.parallel_spin.setValue(self._settings.parallel_processes())
+        self.recursive_check.setChecked(self._settings.recursive_folder_import())
 
     def _save_conversion_settings(self) -> None:
         self._settings.set_selected_profile(str(self.profile_combo.currentData()))
@@ -377,6 +422,7 @@ class MainWindow(QMainWindow):
         self._settings.set_dpi(self.dpi_spin.value())
         self._settings.set_page_expression(self.pages_edit.text())
         self._settings.set_parallel_processes(self.parallel_spin.value())
+        self._settings.set_recursive_folder_import(self.recursive_check.isChecked())
         self._settings.sync()
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
@@ -419,6 +465,33 @@ class MainWindow(QMainWindow):
             item = QTableWidgetItem(value)
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             self.table.setItem(row, column, item)
+
+    def _swap_rows(self, first: int, second: int) -> None:
+        first_values = [
+            self.table.item(first, column).text()
+            for column in range(self.table.columnCount())
+        ]
+        second_values = [
+            self.table.item(second, column).text()
+            for column in range(self.table.columnCount())
+        ]
+        for column, value in enumerate(second_values):
+            item = QTableWidgetItem(value)
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(first, column, item)
+        for column, value in enumerate(first_values):
+            item = QTableWidgetItem(value)
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(second, column, item)
+
+    def _ordered_documents(self) -> list[PdfDocumentInfo]:
+        documents: list[PdfDocumentInfo] = []
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, 1)
+            info = self._documents.get(Path(item.text()))
+            if info is not None:
+                documents.append(info)
+        return documents
 
     def _add_paths(self, paths: list[Path]) -> None:
         for path in paths:

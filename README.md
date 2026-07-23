@@ -35,12 +35,13 @@ PYTHONPATH=src pdf-image-exporter-cli input.pdf --format png --dpi 300
 ## Current status
 
 The project is in early development. See `ROADMAP.md` for completed and pending
-items. The current GUI can add PDFs, accept PDF drag and drop, inspect page
-count and size, select a built-in profile, select PNG/JPEG/TIFF, choose DPI,
-select page ranges, choose an output folder, convert one page at a time through
-`QProcess`, run a bounded conversion queue, pause after running pages finish,
-retry failed pages, show progress, cancel active conversion processes, persist
-basic settings, and show an in-app log viewer.
+items. The current GUI can add PDFs, add a folder of PDFs, optionally discover
+PDFs recursively, accept PDF drag and drop, reorder documents to control queue
+priority, inspect page count and size, select a built-in profile, select
+PNG/JPEG/TIFF, choose DPI, select page ranges, choose an output folder, convert
+one page at a time through `QProcess`, run a bounded conversion queue, pause
+after running pages finish, retry failed pages, show progress, cancel active
+conversion processes, persist basic settings, and show an in-app log viewer.
 
 Current built-in profiles include screen/messaging, web, social media, screen
 reading, print, lossless archive, light JPEG, thumbnails, and OCR-oriented

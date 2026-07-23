@@ -70,6 +70,13 @@ class SettingsService:
     def set_parallel_processes(self, count: int) -> None:
         self.set_value("conversion/parallel_processes", min(max(count, 1), 4))
 
+    def recursive_folder_import(self) -> bool:
+        value = self.value("import/recursive_folders", False)
+        return value in {True, "true", "True", "1", 1}
+
+    def set_recursive_folder_import(self, enabled: bool) -> None:
+        self.set_value("import/recursive_folders", enabled)
+
     def page_expression(self) -> str:
         return str(self.value("conversion/page_expression", "all"))
 

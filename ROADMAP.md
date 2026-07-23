@@ -68,6 +68,12 @@ models and service signals instead of building command strings itself.
   - `python3 -m compileall src tests`: passed.
   - Real Poppler smoke test through `ConversionQueueRunner`: generated a PDF in
     `/tmp`, converted page 1 at 72 DPI and confirmed the PNG exists.
+- Latest check after folder import and manual queue ordering:
+  - `pytest`: passed, 29 tests.
+  - `mypy src tests/unit/test_conversion_queue_runner.py`: passed, no issues in
+    32 source files.
+  - Qt offscreen smoke test: created `MainWindow`, loaded 11 profiles and
+    restored folder-recursion setting.
 - `pytest`: passed, 11 tests.
 - `mypy src`: passed, no issues in 24 source files.
 - `python3 -m compileall src tests`: passed.
@@ -131,10 +137,11 @@ models and service signals instead of building command strings itself.
 - [x] Queue with configurable concurrency.
 - [x] Pause/resume.
 - [x] Retry failed jobs.
-- [ ] Folder import.
-- [ ] Recursive PDF discovery.
+- [x] Folder import.
+- [x] Recursive PDF discovery.
 - [x] Conflict policies.
-- [ ] Priority.
+- [x] Manual priority through visible queue ordering.
+- [ ] Stop after current job.
 
 ## Phase 5: previsualización
 

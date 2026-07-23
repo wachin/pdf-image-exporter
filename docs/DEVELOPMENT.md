@@ -20,3 +20,8 @@ returns immutable planned pages that can be passed to a process execution layer.
 with bounded concurrency through `QProcess`, supports pause/resume, cancellation
 and retrying failed pages, and continues collecting failures instead of stopping
 the whole batch at the first failed page.
+
+PDF folder discovery lives in `core.discovery` so the GUI and future CLI can
+share the same deterministic non-recursive/recursive import behavior. The GUI
+uses the visible table order as the first priority mechanism: moving documents
+up or down changes the order passed to conversion planning.
