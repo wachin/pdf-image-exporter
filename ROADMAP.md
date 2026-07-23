@@ -61,6 +61,13 @@ models and service signals instead of building command strings itself.
   - `python3 -m compileall src tests`: passed.
   - Qt offscreen smoke test with temporary XDG paths: created `MainWindow`,
     loaded 11 built-in profiles and restored page expression `all`.
+- Latest check after bounded queue runner work:
+  - `pytest`: passed, 26 tests.
+  - `mypy src tests/unit/test_conversion_queue_runner.py`: passed, no issues in
+    31 source files.
+  - `python3 -m compileall src tests`: passed.
+  - Real Poppler smoke test through `ConversionQueueRunner`: generated a PDF in
+    `/tmp`, converted page 1 at 72 DPI and confirmed the PNG exists.
 - `pytest`: passed, 11 tests.
 - `mypy src`: passed, no issues in 24 source files.
 - `python3 -m compileall src tests`: passed.
@@ -98,7 +105,7 @@ models and service signals instead of building command strings itself.
 - [x] Implement `pdfinfo` parser and Qt service.
 - [x] Implement initial output naming.
 - [x] Add initial unit tests.
-- [ ] Implement full conversion queue independent of GUI.
+- [x] Implement full conversion queue independent of GUI.
 - [x] Implement conversion planning independent of GUI.
 - [x] Implement built-in profiles and JSON import/export.
 - [x] Implement collision policies.
@@ -121,12 +128,12 @@ models and service signals instead of building command strings itself.
 
 ## Phase 4: batch avanzado
 
-- [ ] Queue with configurable concurrency.
-- [ ] Pause/resume.
-- [ ] Retry failed jobs.
+- [x] Queue with configurable concurrency.
+- [x] Pause/resume.
+- [x] Retry failed jobs.
 - [ ] Folder import.
 - [ ] Recursive PDF discovery.
-- [ ] Conflict policies.
+- [x] Conflict policies.
 - [ ] Priority.
 
 ## Phase 5: previsualización

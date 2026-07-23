@@ -30,9 +30,9 @@ from ..core.conflicts import FileConflictPolicy
 from ..core.formats import FormatOptions, OutputFormat
 from ..core.pdf_info import PdfDocumentInfo
 from ..core.profiles import default_profiles
-from ..core.queue import plan_conversions
+from ..core.queue import QueueSettings, plan_conversions
 from ..metadata import APP_NAME
-from ..services.pdftocairo_service import PageConversion, PdfToCairoRunner
+from ..services.pdftocairo_service import ConversionQueueRunner, PageConversion
 from ..services.pdfinfo_service import PdfInfoService
 from ..services.logging_service import QtLogHandler
 from ..services.settings_service import SettingsService
@@ -51,7 +51,7 @@ class MainWindow(QMainWindow):
         self._settings = SettingsService()
         self._log_handler = log_handler
         self._pdfinfo = PdfInfoService(self)
-        self._runner = PdfToCairoRunner(self)
+        self._runner = ConversionQueueRunner(self)
         self._output_dir: Path | None = self._settings.last_output_dir()
         self.setAcceptDrops(True)
         self._build_ui()
@@ -68,7 +68,11 @@ class MainWindow(QMainWindow):
         self.remove_button = QPushButton(self.tr("Remove"))
         self.log_button = QPushButton(self.tr("Log"))
         self.convert_button = QPushButton(self.tr("Convert"))
+        self.pause_button = QPushButton(self.tr("Pause"))
+        self.retry_button = QPushButton(self.tr("Retry failed"))
         self.cancel_button = QPushButton(self.tr("Cancel"))
+        self.pause_button.setEnabled(False)
+        self.retry_button.setEnabled(False)
         self.cancel_button.setEnabled(False)
         toolbar.addWidget(self.add_button)
         toolbar.addWidget(self.remove_button)
@@ -95,9 +99,16 @@ class MainWindow(QMainWindow):
         self.pages_edit.setPlaceholderText(self.tr("all, 1, 2-5, odd, even"))
         self.pages_edit.setMaximumWidth(170)
         toolbar.addWidget(self.pages_edit)
+        toolbar.addWidget(QLabel(self.tr("Parallel:")))
+        self.parallel_spin = QSpinBox()
+        self.parallel_spin.setRange(1, 4)
+        self.parallel_spin.setValue(1)
+        toolbar.addWidget(self.parallel_spin)
         self.output_button = QPushButton(self.tr("Output folder"))
         toolbar.addWidget(self.output_button)
         toolbar.addWidget(self.convert_button)
+        toolbar.addWidget(self.pause_button)
+        toolbar.addWidget(self.retry_button)
         toolbar.addWidget(self.cancel_button)
         root.addLayout(toolbar)
 
@@ -137,14 +148,22 @@ class MainWindow(QMainWindow):
         self.log_button.clicked.connect(self._show_log)
         self.output_button.clicked.connect(self._choose_output)
         self.convert_button.clicked.connect(self._convert)
+        self.pause_button.clicked.connect(self._toggle_pause)
+        self.retry_button.clicked.connect(self._retry_failed)
         self.cancel_button.clicked.connect(self._runner.cancel)
         self.profile_combo.currentIndexChanged.connect(self._profile_changed)
         self._pdfinfo.finished.connect(self._pdfinfo_finished)
         self._pdfinfo.failed.connect(self._pdfinfo_failed)
         self._runner.progressChanged.connect(self._progress_changed)
         self._runner.finished.connect(self._conversion_finished)
+        self._runner.finishedWithWarnings.connect(
+            self._conversion_finished_with_warnings
+        )
         self._runner.failed.connect(self._conversion_failed)
         self._runner.canceled.connect(self._conversion_canceled)
+        self._runner.paused.connect(self._conversion_paused)
+        self._runner.resumed.connect(self._conversion_resumed)
+        self._runner.pageFailed.connect(self._page_failed)
 
     def _add_pdf(self) -> None:
         files, _selected_filter = QFileDialog.getOpenFileNames(
@@ -216,11 +235,16 @@ class MainWindow(QMainWindow):
             )
             return
         self.convert_button.setEnabled(False)
+        self.pause_button.setEnabled(True)
+        self.retry_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
         self.status_label.setText(self.tr("Converting"))
         self._save_conversion_settings()
         LOGGER.info("Starting conversion of %s page(s)", len(requests))
-        self._runner.start(requests)
+        self._runner.start(
+            requests,
+            QueueSettings(max_parallel_processes=self.parallel_spin.value()),
+        )
 
     def _profile_changed(self) -> None:
         selected = self.profile_combo.currentData()
@@ -265,12 +289,28 @@ class MainWindow(QMainWindow):
 
     def _conversion_finished(self) -> None:
         self.convert_button.setEnabled(True)
+        self.pause_button.setEnabled(False)
+        self.pause_button.setText(self.tr("Pause"))
+        self.retry_button.setEnabled(False)
         self.cancel_button.setEnabled(False)
         self.status_label.setText(self.tr("Completed"))
         LOGGER.info("Conversion completed")
 
+    def _conversion_finished_with_warnings(self, failed_count: int) -> None:
+        self.convert_button.setEnabled(True)
+        self.pause_button.setEnabled(False)
+        self.pause_button.setText(self.tr("Pause"))
+        self.retry_button.setEnabled(True)
+        self.cancel_button.setEnabled(False)
+        self.status_label.setText(
+            self.tr("Completed with {count} failed page(s)").format(count=failed_count)
+        )
+        LOGGER.warning("Conversion completed with %s failed page(s)", failed_count)
+
     def _conversion_failed(self, message: str) -> None:
         self.convert_button.setEnabled(True)
+        self.pause_button.setEnabled(False)
+        self.pause_button.setText(self.tr("Pause"))
         self.cancel_button.setEnabled(False)
         QMessageBox.critical(self, APP_NAME, message)
         self.status_label.setText(self.tr("Failed"))
@@ -278,9 +318,38 @@ class MainWindow(QMainWindow):
 
     def _conversion_canceled(self) -> None:
         self.convert_button.setEnabled(True)
+        self.pause_button.setEnabled(False)
+        self.pause_button.setText(self.tr("Pause"))
         self.cancel_button.setEnabled(False)
         self.status_label.setText(self.tr("Canceled"))
         LOGGER.warning("Conversion canceled")
+
+    def _conversion_paused(self) -> None:
+        self.pause_button.setText(self.tr("Resume"))
+        self.status_label.setText(self.tr("Paused after running page(s) finish"))
+        LOGGER.info("Conversion queue paused")
+
+    def _conversion_resumed(self) -> None:
+        self.pause_button.setText(self.tr("Pause"))
+        self.status_label.setText(self.tr("Converting"))
+        LOGGER.info("Conversion queue resumed")
+
+    def _page_failed(self, page: int, message: str) -> None:
+        LOGGER.error("Page %s failed: %s", page, message)
+
+    def _toggle_pause(self) -> None:
+        if self._runner.is_paused:
+            self._runner.resume()
+        else:
+            self._runner.pause()
+
+    def _retry_failed(self) -> None:
+        self.convert_button.setEnabled(False)
+        self.pause_button.setEnabled(True)
+        self.retry_button.setEnabled(False)
+        self.cancel_button.setEnabled(True)
+        self.status_label.setText(self.tr("Retrying failed page(s)"))
+        self._runner.retry_failed()
 
     def _show_log(self) -> None:
         if self._log_handler is None:
@@ -300,12 +369,14 @@ class MainWindow(QMainWindow):
             self.format_combo.setCurrentIndex(format_index)
         self.dpi_spin.setValue(self._settings.dpi())
         self.pages_edit.setText(self._settings.page_expression())
+        self.parallel_spin.setValue(self._settings.parallel_processes())
 
     def _save_conversion_settings(self) -> None:
         self._settings.set_selected_profile(str(self.profile_combo.currentData()))
         self._settings.set_output_format(OutputFormat(self.format_combo.currentData()))
         self._settings.set_dpi(self.dpi_spin.value())
         self._settings.set_page_expression(self.pages_edit.text())
+        self._settings.set_parallel_processes(self.parallel_spin.value())
         self._settings.sync()
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:

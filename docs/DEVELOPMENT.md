@@ -16,5 +16,7 @@ Current module boundaries:
 Conversion planning is handled in `core.queue`. It expands page ranges,
 calculates expected output dimensions, resolves output-name collisions, and
 returns immutable planned pages that can be passed to a process execution layer.
-The current GUI still executes sequentially through `PdfToCairoRunner`; a fuller
-queue executor with concurrency, pause/resume and retries remains pending.
+`ConversionQueueRunner` in `services.pdftocairo_service` executes those pages
+with bounded concurrency through `QProcess`, supports pause/resume, cancellation
+and retrying failed pages, and continues collecting failures instead of stopping
+the whole batch at the first failed page.

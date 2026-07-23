@@ -38,8 +38,9 @@ The project is in early development. See `ROADMAP.md` for completed and pending
 items. The current GUI can add PDFs, accept PDF drag and drop, inspect page
 count and size, select a built-in profile, select PNG/JPEG/TIFF, choose DPI,
 select page ranges, choose an output folder, convert one page at a time through
-`QProcess`, show progress, cancel the active conversion, persist basic settings,
-and show an in-app log viewer.
+`QProcess`, run a bounded conversion queue, pause after running pages finish,
+retry failed pages, show progress, cancel active conversion processes, persist
+basic settings, and show an in-app log viewer.
 
 Current built-in profiles include screen/messaging, web, social media, screen
 reading, print, lossless archive, light JPEG, thumbnails, and OCR-oriented

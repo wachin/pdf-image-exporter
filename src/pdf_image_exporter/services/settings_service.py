@@ -59,6 +59,17 @@ class SettingsService:
     def set_dpi(self, dpi: int) -> None:
         self.set_value("conversion/dpi", dpi)
 
+    def parallel_processes(self) -> int:
+        value = self.value("conversion/parallel_processes", 1)
+        try:
+            parsed = int(value)
+        except (TypeError, ValueError):
+            return 1
+        return min(max(parsed, 1), 4)
+
+    def set_parallel_processes(self, count: int) -> None:
+        self.set_value("conversion/parallel_processes", min(max(count, 1), 4))
+
     def page_expression(self) -> str:
         return str(self.value("conversion/page_expression", "all"))
 

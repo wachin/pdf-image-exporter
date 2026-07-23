@@ -17,6 +17,7 @@ def test_settings_service_round_trip(tmp_path: Path) -> None:
     service.set_selected_profile("print-standard")
     service.set_output_format(OutputFormat.PNG)
     service.set_dpi(300)
+    service.set_parallel_processes(3)
     service.set_page_expression("1,3-4")
     service.set_conflict_policy(FileConflictPolicy.AUTO_RENAME)
     service.set_window_size(QSize(900, 700))
@@ -29,6 +30,7 @@ def test_settings_service_round_trip(tmp_path: Path) -> None:
     assert loaded.selected_profile() == "print-standard"
     assert loaded.output_format() is OutputFormat.PNG
     assert loaded.dpi() == 300
+    assert loaded.parallel_processes() == 3
     assert loaded.page_expression() == "1,3-4"
     assert loaded.conflict_policy() is FileConflictPolicy.AUTO_RENAME
     assert loaded.window_size(QSize(1, 1)) == QSize(900, 700)
