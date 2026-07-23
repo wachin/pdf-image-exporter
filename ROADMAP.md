@@ -74,6 +74,18 @@ models and service signals instead of building command strings itself.
     32 source files.
   - Qt offscreen smoke test: created `MainWindow`, loaded 11 profiles and
     restored folder-recursion setting.
+- Latest check after stop-after-current queue control:
+  - targeted `pytest tests/unit/test_conversion_queue_runner.py tests/unit/test_queue.py`:
+    passed, 9 tests.
+  - `mypy src tests/unit/test_conversion_queue_runner.py`: passed, no issues in
+    32 source files.
+- Latest check after GUI conflict policy selector:
+  - targeted `pytest tests/unit/test_conflicts.py tests/unit/test_queue.py tests/unit/test_settings_service.py`:
+    passed, 9 tests.
+  - `mypy src tests/unit/test_conversion_queue_runner.py`: passed, no issues in
+    32 source files.
+  - Qt offscreen smoke test: conflict selector exposes 4 policies and defaults
+    to `cancel`.
 - `pytest`: passed, 11 tests.
 - `mypy src`: passed, no issues in 24 source files.
 - `python3 -m compileall src tests`: passed.
@@ -140,8 +152,9 @@ models and service signals instead of building command strings itself.
 - [x] Folder import.
 - [x] Recursive PDF discovery.
 - [x] Conflict policies.
+- [x] Conflict policy selector in GUI.
 - [x] Manual priority through visible queue ordering.
-- [ ] Stop after current job.
+- [x] Stop after current job.
 
 ## Phase 5: previsualización
 

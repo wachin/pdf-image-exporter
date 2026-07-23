@@ -18,8 +18,9 @@ calculates expected output dimensions, resolves output-name collisions, and
 returns immutable planned pages that can be passed to a process execution layer.
 `ConversionQueueRunner` in `services.pdftocairo_service` executes those pages
 with bounded concurrency through `QProcess`, supports pause/resume, cancellation
-and retrying failed pages, and continues collecting failures instead of stopping
-the whole batch at the first failed page.
+stopping after the currently active page batch, retrying failed pages, and
+continues collecting failures instead of stopping the whole batch at the first
+failed page.
 
 PDF folder discovery lives in `core.discovery` so the GUI and future CLI can
 share the same deterministic non-recursive/recursive import behavior. The GUI

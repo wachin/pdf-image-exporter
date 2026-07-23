@@ -61,6 +61,35 @@ def test_queue_runner_pause_resume_state() -> None:
     assert resumed == ["resumed"]
 
 
+def test_queue_runner_stop_after_current_without_active_processes() -> None:
+    runner = ConversionQueueRunner()
+    stopped: list[str] = []
+    runner.stoppedAfterCurrent.connect(lambda: stopped.append("stopped"))
+
+    runner.request_stop_after_current()
+
+    assert stopped == ["stopped"]
+
+
+def test_queue_runner_accepts_stop_after_current_setting(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "pdf_image_exporter.services.pdftocairo_service.find_executable",
+        lambda _name: Path("/bin/true"),
+    )
+    runner = ConversionQueueRunner()
+    failures: list[str] = []
+    runner.failed.connect(failures.append)
+
+    runner.start(
+        [_request(tmp_path, 1)],
+        QueueSettings(max_parallel_processes=1, stop_after_current=True),
+    )
+
+    assert failures == []
+
+
 def _request(tmp_path: Path, page: int) -> PageConversion:
     return PageConversion(
         pdf_path=tmp_path / "input.pdf",

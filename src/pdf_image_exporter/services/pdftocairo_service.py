@@ -190,6 +190,7 @@ class ConversionQueueRunner(QObject):
     paused = pyqtSignal()
     resumed = pyqtSignal()
     canceled = pyqtSignal()
+    stoppedAfterCurrent = pyqtSignal()
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -202,6 +203,7 @@ class ConversionQueueRunner(QObject):
         self._done = 0
         self._paused = False
         self._cancel_requested = False
+        self._stop_after_current_requested = False
         self._executable: Path | None = None
 
     @property
@@ -245,6 +247,7 @@ class ConversionQueueRunner(QObject):
         self._done = 0
         self._paused = False
         self._cancel_requested = False
+        self._stop_after_current_requested = queue_settings.stop_after_current
         self.progressChanged.emit(self._done, self._total)
         self._fill_slots()
 
@@ -267,6 +270,16 @@ class ConversionQueueRunner(QObject):
         requests = list(self._failed_requests)
         self.start(requests, self._settings)
 
+    def request_stop_after_current(self) -> None:
+        """Finish active processes and do not start additional pending pages."""
+
+        if not self._active:
+            self._pending.clear()
+            self.stoppedAfterCurrent.emit()
+            return
+        self._stop_after_current_requested = True
+        self._pending.clear()
+
     def cancel(self) -> None:
         self._cancel_requested = True
         self._pending.clear()
@@ -276,7 +289,8 @@ class ConversionQueueRunner(QObject):
             self.canceled.emit()
 
     def _fill_slots(self) -> None:
-        if self._paused or self._cancel_requested:
+        if self._paused or self._cancel_requested or self._stop_after_current_requested:
+            self._maybe_finish()
             return
         while (
             self._pending and len(self._active) < self._settings.max_parallel_processes
@@ -353,6 +367,9 @@ class ConversionQueueRunner(QObject):
             return
         if self._cancel_requested:
             self.canceled.emit()
+            return
+        if self._stop_after_current_requested:
+            self.stoppedAfterCurrent.emit()
             return
         if self._failed_requests:
             self.finishedWithWarnings.emit(len(self._failed_requests))

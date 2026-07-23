@@ -41,7 +41,8 @@ priority, inspect page count and size, select a built-in profile, select
 PNG/JPEG/TIFF, choose DPI, select page ranges, choose an output folder, convert
 one page at a time through `QProcess`, run a bounded conversion queue, pause
 after running pages finish, retry failed pages, show progress, cancel active
-conversion processes, persist basic settings, and show an in-app log viewer.
+conversion processes, stop after the currently running page batch, persist basic
+settings, choose the output-file conflict policy, and show an in-app log viewer.
 
 Current built-in profiles include screen/messaging, web, social media, screen
 reading, print, lossless archive, light JPEG, thumbnails, and OCR-oriented

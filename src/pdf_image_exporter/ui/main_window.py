@@ -74,9 +74,11 @@ class MainWindow(QMainWindow):
         self.log_button = QPushButton(self.tr("Log"))
         self.convert_button = QPushButton(self.tr("Convert"))
         self.pause_button = QPushButton(self.tr("Pause"))
+        self.stop_after_current_button = QPushButton(self.tr("Stop after current"))
         self.retry_button = QPushButton(self.tr("Retry failed"))
         self.cancel_button = QPushButton(self.tr("Cancel"))
         self.pause_button.setEnabled(False)
+        self.stop_after_current_button.setEnabled(False)
         self.retry_button.setEnabled(False)
         self.cancel_button.setEnabled(False)
         toolbar.addWidget(self.add_button)
@@ -109,6 +111,17 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(self.pages_edit)
         self.recursive_check = QCheckBox(self.tr("Recursive"))
         toolbar.addWidget(self.recursive_check)
+        toolbar.addWidget(QLabel(self.tr("Existing:")))
+        self.conflict_combo = QComboBox()
+        self.conflict_combo.addItem(self.tr("Cancel"), FileConflictPolicy.CANCEL.value)
+        self.conflict_combo.addItem(self.tr("Skip"), FileConflictPolicy.SKIP.value)
+        self.conflict_combo.addItem(
+            self.tr("Auto rename"), FileConflictPolicy.AUTO_RENAME.value
+        )
+        self.conflict_combo.addItem(
+            self.tr("Overwrite"), FileConflictPolicy.OVERWRITE.value
+        )
+        toolbar.addWidget(self.conflict_combo)
         toolbar.addWidget(QLabel(self.tr("Parallel:")))
         self.parallel_spin = QSpinBox()
         self.parallel_spin.setRange(1, 4)
@@ -118,6 +131,7 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(self.output_button)
         toolbar.addWidget(self.convert_button)
         toolbar.addWidget(self.pause_button)
+        toolbar.addWidget(self.stop_after_current_button)
         toolbar.addWidget(self.retry_button)
         toolbar.addWidget(self.cancel_button)
         root.addLayout(toolbar)
@@ -162,6 +176,7 @@ class MainWindow(QMainWindow):
         self.output_button.clicked.connect(self._choose_output)
         self.convert_button.clicked.connect(self._convert)
         self.pause_button.clicked.connect(self._toggle_pause)
+        self.stop_after_current_button.clicked.connect(self._stop_after_current)
         self.retry_button.clicked.connect(self._retry_failed)
         self.cancel_button.clicked.connect(self._runner.cancel)
         self.profile_combo.currentIndexChanged.connect(self._profile_changed)
@@ -176,6 +191,7 @@ class MainWindow(QMainWindow):
         self._runner.canceled.connect(self._conversion_canceled)
         self._runner.paused.connect(self._conversion_paused)
         self._runner.resumed.connect(self._conversion_resumed)
+        self._runner.stoppedAfterCurrent.connect(self._stopped_after_current)
         self._runner.pageFailed.connect(self._page_failed)
 
     def _add_pdf(self) -> None:
@@ -261,7 +277,7 @@ class MainWindow(QMainWindow):
             plan = plan_conversions(
                 self._ordered_documents(),
                 settings,
-                FileConflictPolicy.CANCEL,
+                FileConflictPolicy(self.conflict_combo.currentData()),
             )
         except (FileExistsError, ValueError) as exc:
             QMessageBox.warning(self, APP_NAME, str(exc))
@@ -280,6 +296,7 @@ class MainWindow(QMainWindow):
             return
         self.convert_button.setEnabled(False)
         self.pause_button.setEnabled(True)
+        self.stop_after_current_button.setEnabled(True)
         self.retry_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
         self.status_label.setText(self.tr("Converting"))
@@ -335,6 +352,7 @@ class MainWindow(QMainWindow):
         self.convert_button.setEnabled(True)
         self.pause_button.setEnabled(False)
         self.pause_button.setText(self.tr("Pause"))
+        self.stop_after_current_button.setEnabled(False)
         self.retry_button.setEnabled(False)
         self.cancel_button.setEnabled(False)
         self.status_label.setText(self.tr("Completed"))
@@ -344,6 +362,7 @@ class MainWindow(QMainWindow):
         self.convert_button.setEnabled(True)
         self.pause_button.setEnabled(False)
         self.pause_button.setText(self.tr("Pause"))
+        self.stop_after_current_button.setEnabled(False)
         self.retry_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
         self.status_label.setText(
@@ -355,6 +374,7 @@ class MainWindow(QMainWindow):
         self.convert_button.setEnabled(True)
         self.pause_button.setEnabled(False)
         self.pause_button.setText(self.tr("Pause"))
+        self.stop_after_current_button.setEnabled(False)
         self.cancel_button.setEnabled(False)
         QMessageBox.critical(self, APP_NAME, message)
         self.status_label.setText(self.tr("Failed"))
@@ -364,6 +384,7 @@ class MainWindow(QMainWindow):
         self.convert_button.setEnabled(True)
         self.pause_button.setEnabled(False)
         self.pause_button.setText(self.tr("Pause"))
+        self.stop_after_current_button.setEnabled(False)
         self.cancel_button.setEnabled(False)
         self.status_label.setText(self.tr("Canceled"))
         LOGGER.warning("Conversion canceled")
@@ -381,15 +402,31 @@ class MainWindow(QMainWindow):
     def _page_failed(self, page: int, message: str) -> None:
         LOGGER.error("Page %s failed: %s", page, message)
 
+    def _stopped_after_current(self) -> None:
+        self.convert_button.setEnabled(True)
+        self.pause_button.setEnabled(False)
+        self.pause_button.setText(self.tr("Pause"))
+        self.stop_after_current_button.setEnabled(False)
+        self.retry_button.setEnabled(self._runner.failed_count > 0)
+        self.cancel_button.setEnabled(False)
+        self.status_label.setText(self.tr("Stopped after current page(s)"))
+        LOGGER.info("Conversion queue stopped after current page(s)")
+
     def _toggle_pause(self) -> None:
         if self._runner.is_paused:
             self._runner.resume()
         else:
             self._runner.pause()
 
+    def _stop_after_current(self) -> None:
+        self.stop_after_current_button.setEnabled(False)
+        self.status_label.setText(self.tr("Stopping after current page(s)"))
+        self._runner.request_stop_after_current()
+
     def _retry_failed(self) -> None:
         self.convert_button.setEnabled(False)
         self.pause_button.setEnabled(True)
+        self.stop_after_current_button.setEnabled(True)
         self.retry_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
         self.status_label.setText(self.tr("Retrying failed page(s)"))
@@ -415,6 +452,11 @@ class MainWindow(QMainWindow):
         self.pages_edit.setText(self._settings.page_expression())
         self.parallel_spin.setValue(self._settings.parallel_processes())
         self.recursive_check.setChecked(self._settings.recursive_folder_import())
+        conflict_index = self.conflict_combo.findData(
+            self._settings.conflict_policy().value
+        )
+        if conflict_index >= 0:
+            self.conflict_combo.setCurrentIndex(conflict_index)
 
     def _save_conversion_settings(self) -> None:
         self._settings.set_selected_profile(str(self.profile_combo.currentData()))
@@ -423,6 +465,9 @@ class MainWindow(QMainWindow):
         self._settings.set_page_expression(self.pages_edit.text())
         self._settings.set_parallel_processes(self.parallel_spin.value())
         self._settings.set_recursive_folder_import(self.recursive_check.isChecked())
+        self._settings.set_conflict_policy(
+            FileConflictPolicy(self.conflict_combo.currentData())
+        )
         self._settings.sync()
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:

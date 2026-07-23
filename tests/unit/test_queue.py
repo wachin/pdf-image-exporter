@@ -65,6 +65,7 @@ def test_plan_conversions_auto_renames_existing_output(tmp_path: Path) -> None:
 
 def test_queue_settings_limits_parallel_processes() -> None:
     QueueSettings(max_parallel_processes=4).validate()
+    QueueSettings(max_parallel_processes=1, stop_after_current=True).validate()
     with pytest.raises(ValueError):
         QueueSettings(max_parallel_processes=0).validate()
     with pytest.raises(ValueError):
