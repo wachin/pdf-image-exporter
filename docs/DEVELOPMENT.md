@@ -48,3 +48,9 @@ Translations are loaded at startup by `services.translation_service`. The
 current GUI stores the selected language in QSettings and applies it on the next
 application launch; live retranslation is intentionally deferred until widgets
 have explicit `retranslateUi()` support.
+
+Accessibility and user-facing polish are concentrated in `MainWindow` for now:
+primary controls have shortcuts, accessible names, tooltips and an explicit tab
+order. `core.errors` maps common exceptions to concise user-facing messages,
+while `ConversionPlan.resource_warning()` estimates uncompressed raster memory
+before conversion starts.

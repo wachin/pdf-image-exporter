@@ -115,6 +115,15 @@ models and service signals instead of building command strings itself.
     passed, 3 tests.
   - `mypy src tests/unit/test_conversion_queue_runner.py`: passed, no issues in
     36 source files.
+- Latest check after accessibility/error/resource-estimate pass:
+  - targeted `pytest tests/unit/test_errors.py tests/unit/test_queue.py`: passed,
+    7 tests.
+  - `mypy src tests/unit/test_conversion_queue_runner.py`: passed, no issues in
+    37 source files.
+  - Qt offscreen smoke test confirmed accessible names and shortcuts.
+  - `pylupdate6`: added 26 new messages, now 104 translation messages.
+  - `lrelease`: generated 104 finished translations for English and Spanish
+    `.qm` files locally.
 - `pytest`: passed, 11 tests.
 - `mypy src`: passed, no issues in 24 source files.
 - `python3 -m compileall src tests`: passed.
@@ -213,12 +222,12 @@ models and service signals instead of building command strings itself.
 
 ## Phase 8: accesibilidad y pulido
 
-- [ ] Keyboard navigation audit.
-- [ ] Tab order.
-- [ ] Accessible names.
+- [x] Keyboard navigation audit.
+- [x] Tab order.
+- [x] Accessible names.
 - [ ] HiDPI checks.
-- [ ] Resource estimates.
-- [ ] User-facing error mapping.
+- [x] Resource estimates.
+- [x] User-facing error mapping.
 
 ## Phase 9: empaquetado Debian
 

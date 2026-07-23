@@ -40,6 +40,14 @@ class PlannedPage:
     def output_prefix(self) -> Path:
         return self.output_path.with_suffix("")
 
+    @property
+    def pixel_count(self) -> int:
+        return self.width * self.height
+
+    @property
+    def estimated_memory_bytes(self) -> int:
+        return self.pixel_count * 4
+
 
 @dataclass
 class ConversionJob:
@@ -80,6 +88,31 @@ class ConversionPlan:
     @property
     def page_count(self) -> int:
         return len(self.pages)
+
+    @property
+    def estimated_memory_bytes(self) -> int:
+        return sum(page.estimated_memory_bytes for page in self.pages)
+
+    @property
+    def max_page_memory_bytes(self) -> int:
+        return max((page.estimated_memory_bytes for page in self.pages), default=0)
+
+    def resource_warning(self) -> str | None:
+        """Return a warning when the plan may consume substantial resources."""
+
+        total_mib = self.estimated_memory_bytes / (1024 * 1024)
+        max_mib = self.max_page_memory_bytes / (1024 * 1024)
+        if max_mib >= 512:
+            return (
+                f"A single page may require about {max_mib:.0f} MiB while "
+                "rasterizing. This can be slow or memory intensive."
+            )
+        if total_mib >= 2048:
+            return (
+                f"The planned batch represents about {total_mib:.0f} MiB of "
+                "uncompressed image data. Processing may take a while."
+            )
+        return None
 
 
 def plan_conversions(

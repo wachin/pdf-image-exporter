@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QCloseEvent, QDragEnterEvent, QDropEvent, QPixmap
+from PyQt6.QtGui import QCloseEvent, QDragEnterEvent, QDropEvent, QKeySequence, QPixmap
 from PyQt6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
@@ -32,6 +32,7 @@ from PyQt6.QtWidgets import (
 from ..core.conversion import ConversionSettings
 from ..core.conflicts import FileConflictPolicy
 from ..core.discovery import discover_pdf_files
+from ..core.errors import user_error_message
 from ..core.formats import FormatOptions, OutputFormat
 from ..core.pdf_info import PdfDocumentInfo
 from ..core.profiles import (
@@ -75,6 +76,7 @@ class MainWindow(QMainWindow):
         self.setAcceptDrops(True)
         self._build_ui()
         self._connect_signals()
+        self._configure_accessibility()
         self.resize(self._settings.window_size(self.size()))
         self._restore_conversion_settings()
 
@@ -231,6 +233,69 @@ class MainWindow(QMainWindow):
         root.addLayout(bottom)
         self.setCentralWidget(central)
 
+    def _configure_accessibility(self) -> None:
+        self.add_button.setShortcut(QKeySequence.StandardKey.Open)
+        self.remove_button.setShortcut(QKeySequence.StandardKey.Delete)
+        self.convert_button.setShortcut("Ctrl+Return")
+        self.cancel_button.setShortcut(QKeySequence.StandardKey.Cancel)
+        self.log_button.setShortcut("Ctrl+L")
+        self.output_button.setShortcut("Ctrl+O")
+        self.preview_fit_button.setShortcut("Ctrl+0")
+
+        labelled_widgets = {
+            self.add_button: self.tr("Add PDF files to the conversion queue"),
+            self.add_folder_button: self.tr("Add a folder of PDF files"),
+            self.remove_button: self.tr("Remove selected PDF files"),
+            self.up_button: self.tr("Move selected PDF files up"),
+            self.down_button: self.tr("Move selected PDF files down"),
+            self.log_button: self.tr("Open the activity log"),
+            self.profile_combo: self.tr("Conversion profile"),
+            self.language_combo: self.tr("Interface language"),
+            self.format_combo: self.tr("Output image format"),
+            self.dpi_spin: self.tr("Rasterization resolution in DPI"),
+            self.pages_edit: self.tr("Page range expression"),
+            self.recursive_check: self.tr("Import folders recursively"),
+            self.conflict_combo: self.tr("Output file conflict policy"),
+            self.parallel_spin: self.tr("Maximum simultaneous conversion processes"),
+            self.output_button: self.tr("Choose output folder"),
+            self.convert_button: self.tr("Start conversion"),
+            self.pause_button: self.tr("Pause or resume conversion"),
+            self.stop_after_current_button: self.tr("Stop after current page batch"),
+            self.retry_button: self.tr("Retry failed pages"),
+            self.cancel_button: self.tr("Cancel running conversions"),
+            self.table: self.tr("PDF conversion queue"),
+            self.preview_page_spin: self.tr("Preview page number"),
+            self.preview_zoom_spin: self.tr("Preview zoom percentage"),
+            self.preview_fit_button: self.tr("Fit preview to window"),
+            self.preview_label: self.tr("PDF page preview"),
+            self.progress: self.tr("Overall conversion progress"),
+            self.status_label: self.tr("Current status"),
+        }
+        for widget, text in labelled_widgets.items():
+            widget.setAccessibleName(text)
+            widget.setToolTip(text)
+
+        self.setTabOrder(self.add_button, self.add_folder_button)
+        self.setTabOrder(self.add_folder_button, self.remove_button)
+        self.setTabOrder(self.remove_button, self.up_button)
+        self.setTabOrder(self.up_button, self.down_button)
+        self.setTabOrder(self.down_button, self.log_button)
+        self.setTabOrder(self.log_button, self.profile_combo)
+        self.setTabOrder(self.profile_combo, self.save_profile_button)
+        self.setTabOrder(self.save_profile_button, self.language_combo)
+        self.setTabOrder(self.language_combo, self.format_combo)
+        self.setTabOrder(self.format_combo, self.dpi_spin)
+        self.setTabOrder(self.dpi_spin, self.pages_edit)
+        self.setTabOrder(self.pages_edit, self.recursive_check)
+        self.setTabOrder(self.recursive_check, self.conflict_combo)
+        self.setTabOrder(self.conflict_combo, self.parallel_spin)
+        self.setTabOrder(self.parallel_spin, self.output_button)
+        self.setTabOrder(self.output_button, self.convert_button)
+        self.setTabOrder(self.convert_button, self.pause_button)
+        self.setTabOrder(self.pause_button, self.stop_after_current_button)
+        self.setTabOrder(self.stop_after_current_button, self.retry_button)
+        self.setTabOrder(self.retry_button, self.cancel_button)
+
     def _connect_signals(self) -> None:
         self.add_button.clicked.connect(self._add_pdf)
         self.add_folder_button.clicked.connect(self._add_folder)
@@ -289,7 +354,8 @@ class MainWindow(QMainWindow):
                 Path(directory), self.recursive_check.isChecked()
             )
         except OSError as exc:
-            QMessageBox.warning(self, APP_NAME, str(exc))
+            QMessageBox.warning(self, APP_NAME, user_error_message(exc))
+            LOGGER.warning("Folder import failed: %s", exc)
             return
         self._add_paths(paths)
 
@@ -357,8 +423,12 @@ class MainWindow(QMainWindow):
                 FileConflictPolicy(self.conflict_combo.currentData()),
             )
         except (FileExistsError, ValueError) as exc:
-            QMessageBox.warning(self, APP_NAME, str(exc))
+            QMessageBox.warning(self, APP_NAME, user_error_message(exc))
+            LOGGER.warning("Conversion planning failed: %s", exc)
             return
+        warning = plan.resource_warning()
+        if warning is not None:
+            QMessageBox.warning(self, APP_NAME, warning)
         requests = [
             PageConversion.from_planned_page(page, job.settings)
             for job in plan.jobs

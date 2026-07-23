@@ -48,6 +48,9 @@ page selection, fit-to-window and zoom, and stores thumbnails only in a temporar
 cache that is removed when the application closes. When Poppler reports
 per-page sizes, the preview shows the selected page size and flags documents
 with mixed page dimensions.
+Basic accessibility support includes keyboard shortcuts, tab order, accessible
+names and tooltips for primary controls. Conversion planning also estimates
+uncompressed image memory and warns before potentially heavy batches.
 
 Current built-in profiles include screen/messaging, web, social media, screen
 reading, print, lossless archive, light JPEG, thumbnails, and OCR-oriented

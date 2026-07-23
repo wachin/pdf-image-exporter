@@ -31,6 +31,7 @@ def test_plan_conversions_builds_pages(tmp_path: Path) -> None:
     assert [page.page for page in plan.pages] == [1, 3]
     assert plan.pages[0].output_path == tmp_path / "report-001.png"
     assert plan.pages[0].width == 2479
+    assert plan.estimated_memory_bytes > 0
 
 
 def test_plan_conversions_rejects_existing_output_by_default(tmp_path: Path) -> None:
@@ -70,3 +71,20 @@ def test_queue_settings_limits_parallel_processes() -> None:
         QueueSettings(max_parallel_processes=0).validate()
     with pytest.raises(ValueError):
         QueueSettings(max_parallel_processes=5).validate()
+
+
+def test_plan_resource_warning_for_large_page(tmp_path: Path) -> None:
+    info = PdfDocumentInfo(
+        path=Path("/tmp/poster.pdf"),
+        pages=1,
+        page_sizes=(PageSize(2384, 3370),),
+    )
+    plan = plan_conversions(
+        [info],
+        ConversionSettings(
+            output_format=OutputFormat.PNG,
+            dpi=600,
+            output_dir=tmp_path,
+        ),
+    )
+    assert plan.resource_warning() is not None
